@@ -4,7 +4,7 @@ This document provides an overview of the project structure for developers and A
 
 ## Project Overview
 
-An interactive resume/portfolio application with an AI-powered assistant. Built with TanStack Start and deployed on Netlify.
+And interactive resume/portfolio application with an AI-powered assistant. Built with TanStack Start and deployed on Netlify.
 
 ### Tech Stack
 
