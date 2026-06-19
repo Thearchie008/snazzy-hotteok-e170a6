@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Eco Guardian</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+/* ============================================================
+   style.css — Eco Guardian  (mobile-first)
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-bg:           #0a1a0f;
+  --c-surface:      #0f2415;
+  --c-surface2:     #162d1c;
+  --c-border:       #2a5a38;
+  --c-green-bright: #4aab68;
+  --c-green-mid:    #2e7d4f;
+  --c-green-dark:   #1a4a2e;
+  --c-amber:        #c8a060;
+  --c-orange:       #ff6b35;
+  --c-red:          #e05050;
+  --c-text:         #d4f0dc;
+  --c-text-muted:   #7aab8a;
+  --c-hp-bg:        #0a2010;
+  --safe-top:       env(safe-area-inset-top,    0px);
+  --safe-bottom:    env(safe-area-inset-bottom, 0px);
+  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 22px;
+  --font-display: 'Georgia', serif;
+  --font-body:    system-ui, 'Segoe UI', sans-serif;
+}
+
+html, body {
+  height: 100%; width: 100%;
+  overflow: hidden; overscroll-behavior: none;
+  background: var(--c-bg); color: var(--c-text);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.4;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--c-bg); overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.screen.active {
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TITLE
+══════════════════════════════════════════════════════════ */
+#screen-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: var(--safe-top) 24px var(--safe-bottom);
+  text-align: center;
+  min-height: 100vh;
+}
+.title-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 70%, #0d3d22 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 20% 30%, #1a5c35 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 20%, #142e1c 0%, transparent 60%);
+  animation: titlePulse 6s ease-in-out infinite alternate;
+}
+@keyframes titlePulse { from { opacity:.7 } to { opacity:1 } }
+
+.title-content {
+  position: relative; text-align: center; z-index: 1;
+  padding: 0 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.title-leaf-top { font-size: 3rem; margin-bottom: 8px; animation: monsterFloat 3s ease-in-out infinite; }
+.game-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 11vw, 3.8rem);
+  font-weight: 700; letter-spacing: 0.02em; line-height: 1;
+  text-shadow: 0 0 30px #4aab6860, 0 4px 20px #000a;
+  width: 100%;
+}
+.game-title span {
+  color: var(--c-green-bright); display: block;
+  font-size: 1.15em; letter-spacing: 0.04em;
+  text-shadow: 0 0 40px #4aab6899;
+}
+.title-sub {
+  margin-top: 12px; font-size: 0.82rem;
+  letter-spacing: 0.3em; text-transform: uppercase; color: var(--c-text-muted);
+}
+.btn-begin {
+  margin-top: 36px; padding: 18px 48px;
+  background: var(--c-green-mid); border: 2px solid var(--c-green-bright);
+  border-radius: var(--radius-lg); color: var(--c-text);
+  font-size: 1.1rem; font-weight: 700; letter-spacing: 0.06em;
+  cursor: pointer; min-height: 56px;
+  box-shadow: 0 0 30px #4aab6840;
+}
+.btn-begin:active { background: var(--c-green-bright); }
+
+/* ══════════════════════════════════════════════════════════
+   HUB
+══════════════════════════════════════════════════════════ */
+#screen-hub {
+  display: flex; flex-direction: column;
+  background: var(--c-bg);
+}
+.hub-header {
+  padding: calc(var(--safe-top) + 16px) 20px 14px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hub-title {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--c-green-bright);
+}
+.hub-encounter { display: none; }
+
+.hub-body {
+  flex: 1; display: flex; flex-direction: column;
+  gap: 14px; padding: 20px 20px 10px; justify-content: center;
+}
+
+.hub-btn {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 20px; border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  cursor: pointer; text-align: left;
+  transition: transform 0.1s, border-color 0.15s;
+  min-height: 80px;
+}
+.hub-btn:active { transform: scale(0.97); }
+
+.hub-btn-battle  { border-color: #c03030; }
+.hub-btn-garden  { border-color: var(--c-green-mid); }
+.hub-btn-inventory { border-color: var(--c-amber); }
+
+.hub-btn-battle:active  { background: #1a0808; }
+.hub-btn-garden:active  { background: var(--c-green-dark); }
+.hub-btn-inventory:active { background: #1a1208; }
+
+.hub-btn-icon  { font-size: 2.2rem; flex-shrink: 0; }
+.hub-btn-label { font-size: 1.05rem; font-weight: 700; color: var(--c-text); }
+.hub-btn-sub   { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 2px; }
+
+.hub-footer {
+  padding: 12px 20px calc(12px + var(--safe-bottom));
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: 0.78rem; color: var(--c-text-muted);
+  text-align: center;
+}
+.hub-footer span { color: var(--c-green-bright); font-weight: 700; }
+
+/* ══════════════════════════════════════════════════════════
+   BATTLE
+══════════════════════════════════════════════════════════ */
+#screen-battle { position: relative; overflow: hidden; background: #0a1e10; }
+
+/* Camera feed fills entire battle screen */
+#ar-camera {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; z-index: 1;
+  background: #0a1e10;
+}
+
+/* Battle screen — transparent so camera video shows through */
+#screen-battle {
+  background: transparent !important;
+}
+
+/* AR grid overlay */
+#ar-bg-overlay {
+  position: absolute; inset: 0; z-index: 2;
+  background-image:
+    linear-gradient(#2a5a3815 1px, transparent 1px),
+    linear-gradient(90deg, #2a5a3815 1px, transparent 1px);
+  background-size: 36px 36px;
+  animation: gridScroll 8s linear infinite;
+  pointer-events: none;
+}
+@keyframes gridScroll { from { transform:translateY(0) } to { transform:translateY(36px) } }
+
+/* Enemy HP top bar */
+#hud-top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(var(--safe-top) + 10px) 12px 10px;
+  background: #0a1a0f; border-bottom: 1px solid var(--c-border);
+}
+.btn-exit-battle {
+  flex-shrink: 0; width: 36px; height: 36px;
+  background: #00000060; border: 1px solid #ffffff30;
+  border-radius: 50%; color: #fff; font-size: 0.9rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.hud-enemy-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+#hud-enemy-name { font-size: 0.82rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#hud-turn-badge {
+  flex-shrink: 0; padding: 5px 10px;
+  background: var(--c-green-dark); border: 1px solid var(--c-green-bright);
+  border-radius: 20px; font-size: 0.6rem; font-weight: 800;
+  letter-spacing: 0.12em; color: var(--c-green-bright); white-space: nowrap;
+}
+
+/* Monster stage — centered */
+#enemy-stage {
+  position: fixed; left: 50%; top: 42%;
+  transform: translate(-50%, -50%); z-index: 10;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+#enemy-shadow {
+  width: 100px; height: 18px;
+  background: radial-gradient(ellipse, #00000070, transparent 70%);
+  border-radius: 50%;
+}
+#enemy-model { display: flex; align-items: center; justify-content: center; }
+.monster-svg {
+  width: clamp(130px, 44vw, 210px); height: auto;
+  filter: drop-shadow(0 6px 20px #00000099);
+  animation: monsterFloat 3s ease-in-out infinite;
+}
+@keyframes monsterFloat { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-8px) } }
+#enemy-name-tag {
+  padding: 3px 14px;
+  background: #0f2415cc; border: 1px solid var(--c-border);
+  border-radius: 20px; font-size: 0.68rem; letter-spacing: 0.08em;
+  color: var(--c-green-bright); backdrop-filter: blur(4px);
+}
+
+/* Effects */
+#effects-layer { position: fixed; inset: 0; z-index: 11; pointer-events: none; }
+.capture-ring {
+  position: absolute; top: 42%; left: 50%;
+  width: 0; height: 0; border: 3px solid var(--c-green-bright);
+  border-radius: 50%; transform: translate(-50%, -50%);
+  animation: captureExpand 1.4s ease-out forwards;
+}
+@keyframes captureExpand { from { width:0;height:0;opacity:.9 } to { width:260px;height:260px;opacity:0 } }
+.hit-flash { animation: hitFlash 0.35s ease-out; }
+@keyframes hitFlash { 0%,100% { filter:none } 40% { filter:brightness(3) saturate(0) } }
+
+/* Bottom panel */
+#battle-bottom {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+  background: #0a1a0f; border-top: 1px solid var(--c-border);
+}
+#battle-info-row {
+  display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--c-border);
+}
+#hud-guardian {
+  flex: 1; display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-right: 1px solid var(--c-border); min-width: 0;
+}
+#guardian-sprite { font-size: 2rem; line-height: 1; }
+#guardian-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#guardian-name { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#guardian-level-tag { font-size: 0.62rem; color: var(--c-amber); }
+#battle-log-box { flex: 1; padding: 8px 12px; display: flex; align-items: center; overflow: hidden; }
+#battle-log-text { font-size: 0.68rem; color: var(--c-text-muted); line-height: 1.35; word-break: break-word; }
+
+#action-bar {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; padding: 10px 12px calc(10px + var(--safe-bottom));
+}
+.btn-action {
+  padding: 16px 8px; background: var(--c-surface2);
+  border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  color: var(--c-text); font-size: 0.88rem; font-weight: 700;
+  cursor: pointer; min-height: 54px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-action:active:not(:disabled) { transform: scale(0.95); background: var(--c-green-dark); }
+.btn-action:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── HP bars ─────────────────────────────────────────────── */
+.hp-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.hp-bar-wrap.mini .hp-bar-track { height: 5px; }
+.hp-bar-label { font-size: 0.6rem; color: var(--c-text-muted); min-width: 16px; flex-shrink: 0; }
+.hp-bar-track { flex: 1; height: 8px; background: var(--c-hp-bg); border-radius: 10px; overflow: hidden; min-width: 50px; }
+.hp-bar-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease; }
+.hp-bar-fill.enemy    { background: linear-gradient(90deg, #c03030, #e05050); }
+.hp-bar-fill.guardian { background: linear-gradient(90deg, var(--c-green-dark), var(--c-green-bright)); }
+.hp-bar-wrap > span:last-child { font-size: 0.62rem; color: var(--c-text-muted); min-width: 44px; text-align: right; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════
+   RESULT
+══════════════════════════════════════════════════════════ */
+#screen-result { align-items: center; justify-content: center; padding: var(--safe-top) 0 var(--safe-bottom); }
+#result-content { text-align: center; padding: 30px 24px; width: 100%; max-width: 380px; }
+#result-title { font-family: var(--font-display); font-size: 2.2rem; margin-bottom: 20px; }
+.result-victory { color: var(--c-green-bright); }
+.result-capture { color: #78e08f; }
+.result-defeat  { color: var(--c-red); }
+.drops-label { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 8px; }
+#result-drops { margin-bottom: 24px; }
+.drop-row { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--c-border); font-size: 0.92rem; }
+.drop-icon { font-size: 1.4rem; }
+.drop-name { flex: 1; text-align: left; }
+.drop-qty  { color: var(--c-amber); font-weight: 700; }
+.result-actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* ══════════════════════════════════════════════════════════
+   SHARED PANEL STYLES
+══════════════════════════════════════════════════════════ */
+.panel-screen { flex-direction: column; overflow: hidden; }
+.panel-screen .tab-content { display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; padding: 14px 16px calc(14px + var(--safe-bottom)); }
+.panel-screen .tab-content.active { display: block; }
+
+.panel-header {
+  flex-shrink: 0; display: flex; align-items: center; gap: 14px;
+  padding: calc(var(--safe-top) + 14px) 16px 14px;
+  border-bottom: 1px solid var(--c-border); background: var(--c-surface);
+}
+.panel-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; }
+
+.btn-back {
+  background: none; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+  color: var(--c-green-bright); padding: 8px 14px; font-size: 0.82rem;
+  cursor: pointer; min-height: 40px; flex-shrink: 0;
+}
+.btn-back:active { background: var(--c-surface2); }
+
+/* Tabs */
+.tab-bar, #guardian-tabs, #garden-tabs, #detail-tabs {
+  display: flex; flex-shrink: 0;
+  border-bottom: 1px solid var(--c-border); background: var(--c-surface);
+}
+.tab {
+  flex: 1; padding: 13px 6px; background: none; border: none;
+  border-bottom: 3px solid transparent; color: var(--c-text-muted);
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; min-height: 48px;
+}
+.tab.active { color: var(--c-green-bright); border-bottom-color: var(--c-green-bright); }
+
+/* ══════════════════════════════════════════════════════════
+   GARDEN
+══════════════════════════════════════════════════════════ */
+.guardian-card {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;
+}
+.guardian-card.active-guardian { border-color: var(--c-green-bright); box-shadow: 0 0 14px #4aab6830; }
+
+.gc-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.gc-icon { font-size: 2.4rem; flex-shrink: 0; }
+.gc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.gc-name { font-weight: 700; font-size: 0.92rem; }
+.gc-species { font-size: 0.68rem; color: var(--c-text-muted); font-style: italic; }
+.gc-level { font-size: 0.72rem; color: var(--c-amber); }
+.deployed-tag { font-size: 0.65rem; color: var(--c-green-bright); padding: 3px 8px; border: 1px solid var(--c-green-bright); border-radius: 20px; white-space: nowrap; }
+
+.gc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn-sm {
+  padding: 8px 12px; border-radius: var(--radius-sm);
+  font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--c-border); background: var(--c-surface2);
+  color: var(--c-text); white-space: nowrap; min-height: 36px;
+}
+.btn-sm:active:not(:disabled) { background: var(--c-green-dark); }
+.btn-sm.disabled, .btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-info   { border-color: #7ab8ff; color: #7ab8ff; }
+.btn-bio    { border-color: var(--c-green-bright); color: var(--c-green-bright); }
+.btn-feed   { border-color: #e6c060; color: #e6c060; }
+.btn-deploy { border-color: var(--c-amber); color: var(--c-amber); }
+.btn-hatch  { border-color: var(--c-green-bright); color: var(--c-green-bright); }
+
+.seed-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px;
+}
+.seed-icon { font-size: 2rem; flex-shrink: 0; }
+.seed-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.seed-name    { font-weight: 600; font-size: 0.88rem; }
+.seed-monster { font-size: 0.72rem; color: var(--c-green-bright); }
+.seed-cost    { font-size: 0.68rem; color: var(--c-text-muted); }
+
+/* ══════════════════════════════════════════════════════════
+   GUARDIAN DETAIL
+══════════════════════════════════════════════════════════ */
+
+/* ── Info tab ── */
+.detail-hero {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 16px 16px; border-bottom: 1px solid var(--c-border);
+}
+.detail-big-icon { font-size: 4rem; flex-shrink: 0; }
+.detail-hero-text { display: flex; flex-direction: column; gap: 4px; }
+.detail-hero-name    { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
+.detail-hero-species { font-size: 0.75rem; color: var(--c-text-muted); font-style: italic; }
+.detail-hero-archetype {
+  font-size: 0.62rem; letter-spacing: 0.12em; font-weight: 700;
+  color: var(--c-amber); background: #1a1000; padding: 2px 8px;
+  border-radius: 10px; border: 1px solid var(--c-amber); align-self: flex-start;
+}
+.detail-stats-block {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px; border-bottom: 1px solid var(--c-border);
+}
+.stat-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; }
+.stat-row span   { color: var(--c-text-muted); }
+.stat-row strong { color: var(--c-text); }
+.stat-bar-wrap { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+.stat-bar-track { width: 100px; height: 6px; background: var(--c-hp-bg); border-radius: 10px; overflow: hidden; }
+.stat-bar-fill.hp { height: 100%; background: linear-gradient(90deg, var(--c-green-dark), var(--c-green-bright)); border-radius: 10px; transition: width 0.4s; }
+
+.detail-desc {
+  padding: 14px 16px; font-size: 0.82rem; color: var(--c-text-muted);
+  line-height: 1.6; border-bottom: 1px solid var(--c-border);
+}
+.btn-deploy-full {
+  display: block; width: calc(100% - 32px); margin: 16px;
+  padding: 16px; background: var(--c-surface2);
+  border: 1px solid var(--c-amber); border-radius: var(--radius-md);
+  color: var(--c-amber); font-size: 0.9rem; font-weight: 700; cursor: pointer; min-height: 52px;
+}
+.btn-deploy-full.deployed { border-color: var(--c-green-bright); color: var(--c-green-bright); }
+.btn-deploy-full:active { background: var(--c-green-dark); }
+
+/* ── Bio tab ── */
+.bio-block { padding: 14px 16px; border-bottom: 1px solid var(--c-border); }
+.bio-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 6px; }
+.bio-value { font-size: 0.85rem; line-height: 1.55; color: var(--c-text); }
+.bio-status { color: #ffaa50; font-weight: 600; }
+.bio-trivia { color: var(--c-green-bright); font-style: italic; }
+.bio-facts { padding-left: 16px; display: flex; flex-direction: column; gap: 8px; }
+.bio-facts li { font-size: 0.82rem; line-height: 1.5; color: var(--c-text); }
+
+/* ── Feed tab ── */
+.feed-hero { text-align: center; padding: 20px 16px 12px; }
+.feed-icon  { font-size: 4rem; }
+.feed-level { font-size: 0.82rem; color: var(--c-amber); margin-top: 6px; font-weight: 700; letter-spacing: 0.08em; }
+
+.feed-stat-preview {
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 14px 20px; border-bottom: 1px solid var(--c-border);
+}
+.feed-stat { text-align: center; }
+.feed-stat span  { display: block; font-size: 0.65rem; color: var(--c-text-muted); margin-bottom: 4px; }
+.feed-stat strong{ font-size: 1.1rem; color: var(--c-text); }
+.feed-arrow { font-size: 0.8rem; color: var(--c-green-bright); font-weight: 700; }
+
+.feed-cost-box {
+  text-align: center; padding: 20px 16px 14px;
+  border-bottom: 1px solid var(--c-border);
+}
+.feed-cost-label  { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-muted); margin-bottom: 6px; }
+.feed-cost-amount { font-size: 1.3rem; font-weight: 700; color: #e6c060; margin-bottom: 4px; }
+.feed-cost-have   { font-size: 0.78rem; color: var(--c-text-muted); }
+
+.btn-feed-action {
+  display: block; width: calc(100% - 32px); margin: 16px;
+  padding: 18px; background: var(--c-green-mid);
+  border: 2px solid var(--c-green-bright); border-radius: var(--radius-md);
+  color: var(--c-text); font-size: 1rem; font-weight: 700; cursor: pointer; min-height: 56px;
+}
+.btn-feed-action:active:not(.disabled) { background: var(--c-green-bright); }
+.btn-feed-action.disabled, .btn-feed-action:disabled { opacity: 0.4; cursor: not-allowed; background: var(--c-surface2); border-color: var(--c-border); }
+
+/* ══════════════════════════════════════════════════════════
+   INVENTORY
+══════════════════════════════════════════════════════════ */
+.inv-section-label {
+  font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--c-text-muted); padding: 8px 0 6px; margin-top: 4px;
+}
+.item-grid {
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  flex: 1; min-height: 0;
+  padding: 14px 16px calc(14px + var(--safe-bottom));
+  display: flex; flex-direction: column; gap: 8px;
+}
+.item-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: var(--radius-md); padding: 14px;
+}
+.item-icon    { font-size: 2rem; flex-shrink: 0; }
+.item-details { flex: 1; min-width: 0; }
+.item-name    { font-weight: 600; font-size: 0.9rem; }
+.item-desc    { font-size: 0.72rem; color: var(--c-text-muted); margin-top: 2px; }
+.item-qty     { font-size: 1.1rem; font-weight: 700; color: var(--c-amber); flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════
+   SHARED BUTTONS
+══════════════════════════════════════════════════════════ */
+.btn-primary {
+  padding: 16px 24px; background: var(--c-green-mid);
+  border: 2px solid var(--c-green-bright); border-radius: var(--radius-md);
+  color: var(--c-text); font-size: 1rem; font-weight: 700;
+  cursor: pointer; min-height: 52px; width: 100%;
+}
+.btn-primary:active { background: var(--c-green-bright); }
+.btn-secondary {
+  padding: 14px 24px; background: var(--c-surface2);
+  border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  color: var(--c-text-muted); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; min-height: 48px; width: 100%;
+}
+.btn-secondary:active { background: var(--c-surface); }
+
+/* ══════════════════════════════════════════════════════════
+   EMPTY + TOAST
+══════════════════════════════════════════════════════════ */
+.empty-msg {
+  color: var(--c-text-muted); font-size: 0.82rem;
+  text-align: center; padding: 40px 16px; font-style: italic; line-height: 1.7;
+}
+#toast {
+  position: fixed; bottom: calc(80px + var(--safe-bottom)); left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1a4a2eee; border: 1px solid var(--c-green-bright);
+  border-radius: 24px; padding: 11px 22px; font-size: 0.82rem; color: var(--c-text);
+  opacity: 0; transition: opacity 0.22s, transform 0.22s;
+  pointer-events: none; z-index: 999; max-width: 85vw; text-align: center;
+  backdrop-filter: blur(8px);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Battle UI visibility — controlled by JS */
+#hud-top, #battle-bottom {
+  display: none;
+}
+#hud-top.battle-active, #battle-bottom.battle-active {
+  display: flex;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TUTORIAL SCREEN
+══════════════════════════════════════════════════════════ */
+#screen-tutorial {
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--c-bg);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--safe-top) + 20px) 24px calc(var(--safe-bottom) + 24px);
+}
+
+.tutorial-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.tutorial-icon { font-size: 3.5rem; margin-bottom: 10px; }
+
+.tutorial-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--c-green-bright);
+  margin-bottom: 6px;
+}
+
+.tutorial-subtitle {
+  font-size: 0.82rem;
+  color: var(--c-text-muted);
+  line-height: 1.5;
+}
+
+.tutorial-steps {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.tutorial-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.tutorial-step-num {
+  width: 32px; height: 32px;
+  background: var(--c-green-dark);
+  border: 2px solid var(--c-green-bright);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 800;
+  color: var(--c-green-bright);
+  flex-shrink: 0;
+}
+
+.tutorial-step-body { flex: 1; }
+
+.tutorial-step-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+  color: var(--c-text);
+}
+
+.tutorial-step-desc {
+  font-size: 0.78rem;
+  color: var(--c-text-muted);
+  line-height: 1.5;
+}
+
+.tutorial-step-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+.tutorial-starter-box {
+  width: 100%;
+  background: var(--c-green-dark);
+  border: 1px solid var(--c-green-bright);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.tutorial-starter-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-green-bright);
+  margin-bottom: 10px;
+}
+
+.tutorial-starter-items {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.tutorial-starter-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tutorial-starter-item span:first-child { font-size: 1.8rem; }
+.tutorial-starter-item span:last-child  { font-size: 0.75rem; color: var(--c-text); font-weight: 600; }
+
+/* Guardian battle HUD — hide the hp-bar span, show only inline version */
+#hud-guardian .hp-bar-wrap > span:last-child { display: none !important; }
+#guardian-hp-text-inline { font-size: 0.58rem; color: var(--c-text-muted); }
+#guardian-bottom-row { display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+#guardian-level-tag { font-size: 0.58rem; color: var(--c-amber); }
+#guardian-name { font-size: 0.7rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+  </style>
+</head>
+<body>
+  <div id="screen-title" class="screen active">
+    <div class="title-bg"></div>
+    <div class="title-content">
+      <div class="title-leaf-top">🌿</div>
+      <h1 class="game-title">ECO<br><span>GUARDIAN</span></h1>
+      <p class="title-sub">Capture. Hatch. Grow.</p>
+      <button class="btn-begin" onclick="Game.startGame()">▶ Begin Journey</button>
+    </div>
+  </div>
+  <div id="screen-tutorial" class="screen">
+    <div class="tutorial-header">
+      <div class="tutorial-icon">🌿</div>
+      <div class="tutorial-title">Welcome, Guardian</div>
+      <div class="tutorial-subtitle">The world is full of wild plant-monsters.<br>Capture them, raise them, and protect nature.</div>
+    </div>
+    <div class="tutorial-starter-box">
+      <div class="tutorial-starter-label">Your Starter Kit</div>
+      <div class="tutorial-starter-items">
+        <div class="tutorial-starter-item"><span>🌰</span><span>Pitcher Seed ×1</span></div>
+        <div class="tutorial-starter-item"><span>💧</span><span>Water ×3</span></div>
+      </div>
+    </div>
+    <div class="tutorial-steps">
+      <div class="tutorial-step"><div class="tutorial-step-num">1</div><div class="tutorial-step-body"><div class="tutorial-step-title">Go to Garden → Hatchery</div><div class="tutorial-step-desc">You have a Pitcher Seed waiting. Head to your Garden and open the Hatchery tab.</div></div><div class="tutorial-step-icon">🌱</div></div>
+      <div class="tutorial-step"><div class="tutorial-step-num">2</div><div class="tutorial-step-body"><div class="tutorial-step-title">Hatch your seed</div><div class="tutorial-step-desc">Use your 3 💧 Water to hatch the Pitcher Seed into a Pitcher-Knight Guardian.</div></div><div class="tutorial-step-icon">🥚</div></div>
+      <div class="tutorial-step"><div class="tutorial-step-num">3</div><div class="tutorial-step-body"><div class="tutorial-step-title">Deploy your Guardian</div><div class="tutorial-step-desc">Go to the Team tab and tap Deploy to send your Guardian into battle.</div></div><div class="tutorial-step-icon">⚔️</div></div>
+      <div class="tutorial-step"><div class="tutorial-step-num">4</div><div class="tutorial-step-body"><div class="tutorial-step-title">Battle 10 plant-monsters!</div><div class="tutorial-step-desc">Defeat or capture them all. Every victory drops 💧 Water and ☀️ Sunlight!</div></div><div class="tutorial-step-icon">🌍</div></div>
+    </div>
+    <button class="btn-begin" onclick="Game.finishTutorial()">Let's Go! →</button>
+  </div>
+  <div id="screen-hub" class="screen">
+    <div class="hub-header"><div class="hub-title">ECO GUARDIAN</div></div>
+    <div class="hub-body">
+      <button class="hub-btn hub-btn-battle" onclick="UI.openBattle()"><div class="hub-btn-icon">⚔️</div><div><div class="hub-btn-label">Battle</div><div class="hub-btn-sub">Fight monsters in AR</div></div></button>
+      <button class="hub-btn hub-btn-garden" onclick="UI.openGarden()"><div class="hub-btn-icon">🌱</div><div><div class="hub-btn-label">Garden</div><div class="hub-btn-sub">Hatch seeds &amp; manage team</div></div></button>
+      <button class="hub-btn hub-btn-inventory" onclick="UI.openInventory()"><div class="hub-btn-icon">🎒</div><div><div class="hub-btn-label">Inventory</div><div class="hub-btn-sub">Items &amp; seeds</div></div></button>
+    </div>
+    <div class="hub-footer"><span id="hub-guardian-count">0</span> Guardians &nbsp;·&nbsp;<span id="hub-water-count">0</span> 💧 &nbsp;·&nbsp;<span id="hub-sunlight-count">0</span> ☀️</div>
+  </div>
+  <div id="screen-battle" class="screen">
+    <video id="ar-camera" autoplay playsinline muted></video>
+    <div id="ar-bg-overlay"></div>
+    <div id="enemy-stage">
+      <div id="enemy-model-wrap"><canvas id="monster-canvas"></canvas></div>
+      <div id="enemy-name-tag"></div>
+    </div>
+    <div id="effects-layer"></div>
+  </div>
+  <div id="hud-top">
+    <button class="btn-exit-battle" onclick="UI.exitBattle()">✕</button>
+    <div class="hud-enemy-block">
+      <span id="hud-enemy-name">—</span>
+      <div class="hp-bar-wrap"><div class="hp-bar-label">HP</div><div class="hp-bar-track"><div id="enemy-hp-bar" class="hp-bar-fill enemy" style="width:100%"></div></div><span id="enemy-hp-text">—</span></div>
+    </div>
+    <div id="hud-turn-badge">YOUR TURN</div>
+  </div>
+  <div id="battle-bottom">
+    <div id="battle-info-row">
+      <div id="hud-guardian">
+        <div id="guardian-sprite-wrap"><div id="guardian-sprite">🌿</div></div>
+        <div id="guardian-info">
+          <span id="guardian-name">No Guardian</span>
+          <div class="hp-bar-wrap mini"><div class="hp-bar-label">HP</div><div class="hp-bar-track"><div id="guardian-hp-bar" class="hp-bar-fill guardian" style="width:0%"></div></div><span id="guardian-hp-text">—</span></div>
+          <div id="guardian-bottom-row"><span id="guardian-level-tag">Lv —</span><span id="guardian-hp-text-inline">—</span></div>
+        </div>
+      </div>
+      <div id="battle-log-box"><p id="battle-log-text">A monster appears!</p></div>
+    </div>
+    <div id="action-bar">
+      <button class="btn-action" id="btn-attack"  onclick="Battle.playerAttack()">⚔️ Attack</button>
+      <button class="btn-action" id="btn-capture" onclick="Battle.attemptCapture()">🌱 Capture</button>
+    </div>
+  </div>
+  <div id="screen-result" class="screen">
+    <div id="result-content">
+      <h2 id="result-title">Victory!</h2>
+      <div id="result-drops"></div>
+      <div class="result-actions">
+        <button class="btn-primary"   onclick="Game.nextEncounter()">⚔️ Next Battle</button>
+        <button class="btn-secondary" onclick="UI.closeToHub()">🏠 Return to Hub</button>
+      </div>
+    </div>
+  </div>
+  <div id="screen-garden" class="screen panel-screen">
+    <div class="panel-header"><button class="btn-back" onclick="UI.closeToHub()">← Back</button><h2>Garden</h2></div>
+    <div id="garden-tabs">
+      <button class="tab active" data-tab="team"    onclick="UI.switchGardenTab('team')">🌿 Team</button>
+      <button class="tab"        data-tab="hatchery" onclick="UI.switchGardenTab('hatchery')">🥚 Hatchery</button>
+    </div>
+    <div id="garden-tab-team"     class="tab-content active"><div id="garden-team-list"></div></div>
+    <div id="garden-tab-hatchery" class="tab-content">       <div id="garden-hatch-list"></div></div>
+  </div>
+  <div id="screen-guardian-detail" class="screen panel-screen">
+    <div class="panel-header"><button class="btn-back" onclick="UI.closeDetail()">← Back</button><h2 id="detail-guardian-name">Guardian</h2></div>
+    <div id="detail-tabs">
+      <button class="tab active" data-tab="info" onclick="UI.switchDetailTab('info')">📋 Info</button>
+      <button class="tab"        data-tab="bio"  onclick="UI.switchDetailTab('bio')">🌿 Bio</button>
+      <button class="tab"        data-tab="feed" onclick="UI.switchDetailTab('feed')">☀️ Feed</button>
+    </div>
+    <div id="detail-tab-info" class="tab-content active"></div>
+    <div id="detail-tab-bio"  class="tab-content"></div>
+    <div id="detail-tab-feed" class="tab-content"></div>
+  </div>
+  <div id="screen-inventory" class="screen panel-screen">
+    <div class="panel-header"><button class="btn-back" onclick="UI.closeToHub()">← Back</button><h2>Inventory</h2></div>
+    <div class="item-grid" id="inventory-grid"></div>
+  </div>
+  <div id="toast"></div>
+  <script>
+// ============================================================
+//  data.js — Static game data
+// ============================================================
+
+const DATA = {
+
+  items: {
+    water:    { id:'water',    name:'Water',    icon:'💧', description:'Used to hatch seeds.',    type:'consumable' },
+    sunlight: { id:'sunlight', name:'Sunlight', icon:'☀️', description:'Used to level up Guardians.', type:'consumable' },
+    seed_pitcher_knight:  { id:'seed_pitcher_knight',  name:'Pitcher Seed',   icon:'🌰', description:'A heavy dark seed.',         type:'seed', monsterId:'pitcher_knight'  },
+    seed_snap_drake:      { id:'seed_snap_drake',      name:'Snap Seed',      icon:'🌱', description:'A tiny jaw-shaped seed.',    type:'seed', monsterId:'snap_drake'      },
+    seed_puffer_fern:     { id:'seed_puffer_fern',     name:'Puff Spore',     icon:'🍄', description:'A round spore pod.',         type:'seed', monsterId:'puffer_fern'     },
+    seed_rafflesia_king:  { id:'seed_rafflesia_king',  name:'Rafflesia Bud',  icon:'🌺', description:'A heavy flower bud.',        type:'seed', monsterId:'rafflesia_king'  },
+    seed_bramble_cat:     { id:'seed_bramble_cat',     name:'Bramble Seed',   icon:'🫐', description:'A thorny little seed.',      type:'seed', monsterId:'bramble_cat'     },
+    seed_sun_beamer:      { id:'seed_sun_beamer',      name:'Sun Seed',       icon:'🌻', description:'A bright yellow seed.',      type:'seed', monsterId:'sun_beamer'      },
+    seed_baobab_sentinel: { id:'seed_baobab_sentinel', name:'Baobab Nut',     icon:'🌳', description:'A massive hardened nut.',    type:'seed', monsterId:'baobab_sentinel' },
+    seed_willow_weeper:   { id:'seed_willow_weeper',   name:'Willow Wisp',    icon:'🍃', description:'A pale, drifting seed.',     type:'seed', monsterId:'willow_weeper'   },
+    seed_cactus_sentry:   { id:'seed_cactus_sentry',   name:'Cactus Spine',   icon:'🌵', description:'A sharp spine-seed.',        type:'seed', monsterId:'cactus_sentry'   },
+    seed_lotus_monk:      { id:'seed_lotus_monk',      name:'Lotus Gem',      icon:'🪷', description:'A perfect pearl-like seed.', type:'seed', monsterId:'lotus_monk'      },
+  },
+
+  monsters: {
+    // ── 1. Pitcher-Knight (Tank) ──────────────────────────
+    pitcher_knight: {
+      id:'pitcher_knight', name:'Pitcher-Knight', species:'Nepenthes rajah',
+      archetype:'tank', description:'An armored, heavy-set plant monster. Its torso is a deep pitcher and it wears its lid like a helmet.',
+      bio: {
+        realName:'Nepenthes (Tropical Pitcher Plant)',
+        habitat:'Tropical rainforests of Southeast Asia — Borneo, Sumatra, the Philippines.',
+        funFacts:[
+          'Nepenthes pitchers can hold up to 3.5 litres of digestive fluid.',
+          'They lure insects with sweet nectar along the rim before drowning them.',
+          'Some species form a symbiotic relationship with tree shrews.',
+          'Nepenthes rajah holds the record for the largest pitcher of any carnivorous plant.',
+        ],
+        conservationStatus:'Vulnerable (some species Critically Endangered)',
+        trivia:'The name Nepenthes comes from Greek mythology — a drug of forgetfulness in Homer\'s Odyssey.',
+      },
+      baseStats:{ hp:50, attack:8, defense:4 },
+      dropTable:[
+        { itemId:'water',               rate:0.80, qty:[1,3] },
+        { itemId:'sunlight',            rate:0.50, qty:[1,2] },
+        { itemId:'seed_pitcher_knight', rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.55, statScale:{ hp:1.06, attack:1.05, defense:1.04 },
+    },
+
+    // ── 2. Snap-Drake (Attacker) ──────────────────────────
+    snap_drake: {
+      id:'snap_drake', name:'Snap-Drake', species:'Dionaea muscipula',
+      archetype:'attacker', description:'A bipedal raptor-style creature with a head that is one giant Venus Flytrap, snapping at anything that moves.',
+      bio: {
+        realName:'Venus Flytrap (Dionaea muscipula)',
+        habitat:'Subtropical wetlands of North and South Carolina, USA.',
+        funFacts:[
+          'The trap snaps shut in as little as 0.1 seconds — one of the fastest movements in the plant kingdom.',
+          'Each trap can only open and close a limited number of times before it dies.',
+          'Trigger hairs must be touched twice within 20 seconds to activate the trap.',
+          'After closing, the trap seals tightly and releases digestive enzymes.',
+        ],
+        conservationStatus:'Vulnerable',
+        trivia:'Charles Darwin called the Venus Flytrap "one of the most wonderful plants in the world."',
+      },
+      baseStats:{ hp:35, attack:14, defense:1 },
+      dropTable:[
+        { itemId:'water',          rate:0.75, qty:[1,2] },
+        { itemId:'sunlight',       rate:0.45, qty:[1,2] },
+        { itemId:'seed_snap_drake',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.50, statScale:{ hp:1.05, attack:1.08, defense:1.03 },
+    },
+
+    // ── 3. Puffer-Fern (Balanced) ─────────────────────────
+    puffer_fern: {
+      id:'puffer_fern', name:'Puffer-Fern', species:'Lycoperdon perlatum',
+      archetype:'balanced', description:'A round bouncy creature that looks like a fluffy dandelion ball — until it gets angry and releases a toxic spore cloud.',
+      bio: {
+        realName:'Puffball Mushroom (Lycoperdon perlatum)',
+        habitat:'Forests, grasslands, and meadows worldwide.',
+        funFacts:[
+          'When mature, a single puffball can release trillions of spores in one puff.',
+          'Giant puffballs (Calvatia gigantea) can grow larger than a human head.',
+          'Young puffballs are edible and considered a delicacy in many cultures.',
+          'The spores can travel miles on the wind to colonise new areas.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'Ancient people used dried puffball spores to stop bleeding wounds.',
+      },
+      baseStats:{ hp:45, attack:10, defense:3 },
+      dropTable:[
+        { itemId:'water',           rate:0.80, qty:[1,3] },
+        { itemId:'sunlight',        rate:0.55, qty:[1,2] },
+        { itemId:'seed_puffer_fern',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.55, statScale:{ hp:1.06, attack:1.06, defense:1.05 },
+    },
+
+    // ── 4. Rafflesia King (Tank) ──────────────────────────
+    rafflesia_king: {
+      id:'rafflesia_king', name:'Rafflesia King', species:'Rafflesia arnoldii',
+      archetype:'tank', description:'A massive flat floor-dwelling monster that looks like a giant red-spotted flower. Too heavy to move fast but devastating up close.',
+      bio: {
+        realName:'Rafflesia arnoldii',
+        habitat:'Rainforests of Sumatra and Borneo.',
+        funFacts:[
+          'Rafflesia produces the largest individual flower on Earth — up to 1 metre wide.',
+          'It has no leaves, stems, or roots — it lives entirely as a parasite inside a host vine.',
+          'The flower smells like rotting flesh to attract carrion flies for pollination.',
+          'It takes up to 9 months for the bud to open, and the flower lasts only a few days.',
+        ],
+        conservationStatus:'Critically Endangered',
+        trivia:'Rafflesia was named after Sir Stamford Raffles, the founder of modern Singapore.',
+      },
+      baseStats:{ hp:80, attack:6, defense:8 },
+      dropTable:[
+        { itemId:'water',              rate:0.75, qty:[1,3] },
+        { itemId:'sunlight',           rate:0.40, qty:[1,2] },
+        { itemId:'seed_rafflesia_king',rate:0.30, qty:[1,1] },
+      ],
+      captureRate:0.45, statScale:{ hp:1.08, attack:1.04, defense:1.07 },
+    },
+
+    // ── 5. Bramble-Cat (Attacker) ─────────────────────────
+    bramble_cat: {
+      id:'bramble_cat', name:'Bramble-Cat', species:'Rubus fruticosus',
+      archetype:'attacker', description:'A feline shape made entirely of twisted thorny vines. Fast, sharp, and relentless.',
+      bio: {
+        realName:'Blackberry / Bramble (Rubus fruticosus)',
+        habitat:'Hedgerows, forests, and disturbed land across Europe and western Asia.',
+        funFacts:[
+          'Bramble canes can grow up to 5 metres long in a single season.',
+          'The thorns are actually modified leaves called prickles, not true thorns.',
+          'Blackberries are technically not berries — they are aggregate fruits.',
+          'Brambles are one of the most invasive plants in the world, colonising cleared land rapidly.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'In British folklore, blackberries should not be picked after Michaelmas Day as the devil spits on them.',
+      },
+      baseStats:{ hp:38, attack:15, defense:2 },
+      dropTable:[
+        { itemId:'water',           rate:0.75, qty:[1,2] },
+        { itemId:'sunlight',        rate:0.50, qty:[1,2] },
+        { itemId:'seed_bramble_cat',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.50, statScale:{ hp:1.05, attack:1.08, defense:1.03 },
+    },
+
+    // ── 6. Sun-Beamer (Balanced) ──────────────────────────
+    sun_beamer: {
+      id:'sun_beamer', name:'Sun-Beamer', species:'Helianthus annuus',
+      archetype:'balanced', description:'A lanky tall creature with a glowing solar-disk face that beams blinding light.',
+      bio: {
+        realName:'Sunflower (Helianthus annuus)',
+        habitat:'Native to North America; cultivated worldwide.',
+        funFacts:[
+          'Young sunflowers track the sun from east to west each day — a behaviour called heliotropism.',
+          'A single sunflower head is actually made up of up to 2,000 tiny flowers called florets.',
+          'Sunflower roots can absorb radioactive caesium — they were planted near Chernobyl to clean the soil.',
+          'The world record sunflower measured over 9 metres tall.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'The Aztecs worshipped sunflowers as symbols of their sun god and adorned priestesses with sunflower crowns.',
+      },
+      baseStats:{ hp:42, attack:11, defense:3 },
+      dropTable:[
+        { itemId:'water',          rate:0.80, qty:[1,3] },
+        { itemId:'sunlight',       rate:0.65, qty:[1,3] },
+        { itemId:'seed_sun_beamer',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.55, statScale:{ hp:1.06, attack:1.06, defense:1.05 },
+    },
+
+    // ── 7. Baobab Sentinel (Tank) ─────────────────────────
+    baobab_sentinel: {
+      id:'baobab_sentinel', name:'Baobab Sentinel', species:'Adansonia digitata',
+      archetype:'tank', description:'A massive thick-trunked golem of ancient bark and roots. Nearly impossible to knock down.',
+      bio: {
+        realName:'Baobab Tree (Adansonia digitata)',
+        habitat:'African savanna, Madagascar, and northwest Australia.',
+        funFacts:[
+          'Baobabs can live for over 2,000 years — some are among the oldest living things on Earth.',
+          'The trunk can store up to 120,000 litres of water to survive droughts.',
+          'Known as the "Tree of Life" — its fruit, leaves, bark, and seeds are all edible or medicinal.',
+          'The trunk can reach up to 11 metres in diameter.',
+        ],
+        conservationStatus:'Least Concern (some species Endangered)',
+        trivia:'In The Little Prince, baobabs are portrayed as planet-destroying menaces that must be uprooted daily.',
+      },
+      baseStats:{ hp:90, attack:7, defense:10 },
+      dropTable:[
+        { itemId:'water',               rate:0.70, qty:[2,4] },
+        { itemId:'sunlight',            rate:0.40, qty:[1,2] },
+        { itemId:'seed_baobab_sentinel',rate:0.25, qty:[1,1] },
+      ],
+      captureRate:0.40, statScale:{ hp:1.08, attack:1.04, defense:1.08 },
+    },
+
+    // ── 8. Willow-Weeper (Balanced) ───────────────────────
+    willow_weeper: {
+      id:'willow_weeper', name:'Willow-Weeper', species:'Salix babylonica',
+      archetype:'balanced', description:'A slender ghostly figure with long drooping leaves for hair. Eerie and graceful.',
+      bio: {
+        realName:'Weeping Willow (Salix babylonica)',
+        habitat:'River banks and moist areas; originally from China, now worldwide.',
+        funFacts:[
+          'Willow bark contains salicin — the compound that led to the invention of aspirin.',
+          'The roots are so aggressive they can invade and crack underground pipes.',
+          'Willows can be cloned by simply sticking a branch in moist soil.',
+          'They are among the fastest growing trees, adding up to 2.5 metres per year.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'In ancient Chinese culture, willow branches were given to departing friends as a symbol of enduring friendship.',
+      },
+      baseStats:{ hp:44, attack:10, defense:3 },
+      dropTable:[
+        { itemId:'water',             rate:0.80, qty:[1,3] },
+        { itemId:'sunlight',          rate:0.50, qty:[1,2] },
+        { itemId:'seed_willow_weeper',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.55, statScale:{ hp:1.06, attack:1.06, defense:1.05 },
+    },
+
+    // ── 9. Cactus Sentry (Attacker) ───────────────────────
+    cactus_sentry: {
+      id:'cactus_sentry', name:'Cactus Sentry', species:'Carnegiea gigantea',
+      archetype:'attacker', description:'A classic three-pronged cactus shape with eyes peering from the ridges. Covered in razor spines.',
+      bio: {
+        realName:'Saguaro Cactus (Carnegiea gigantea)',
+        habitat:'Sonoran Desert of Arizona, USA and Sonora, Mexico.',
+        funFacts:[
+          'A Saguaro does not grow its first arm until it is 75 years old.',
+          'They can live for over 150 years and grow up to 12 metres tall.',
+          'Their thick pleated skin expands like an accordion to store hundreds of litres of water after rain.',
+          'Dozens of species depend on the Saguaro — birds nest in cavities, bats drink the nectar.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'It is illegal to harm or remove a Saguaro in Arizona — even on your own property.',
+      },
+      baseStats:{ hp:40, attack:13, defense:3 },
+      dropTable:[
+        { itemId:'water',            rate:0.70, qty:[1,2] },
+        { itemId:'sunlight',         rate:0.55, qty:[1,2] },
+        { itemId:'seed_cactus_sentry',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.50, statScale:{ hp:1.05, attack:1.07, defense:1.04 },
+    },
+
+    // ── 10. Lotus-Monk (Balanced) ─────────────────────────
+    lotus_monk: {
+      id:'lotus_monk', name:'Lotus-Monk', species:'Nelumbo nucifera',
+      archetype:'balanced', description:'A serene floating monster sitting atop a giant lily pad, with flower petals forming a robe. Wise and unpredictable.',
+      bio: {
+        realName:'Sacred Lotus (Nelumbo nucifera)',
+        habitat:'Ponds, lakes, and slow-moving rivers across Asia and Australia.',
+        funFacts:[
+          'Lotus seeds can remain viable for over 1,300 years — the oldest germinated seed was 1,300 years old.',
+          'The lotus is self-thermoregulating, maintaining a temperature of 30–35°C even in cold weather.',
+          'Its leaves are superhydrophobic — water rolls off them perfectly, taking dirt with it (the "Lotus Effect").',
+          'It is the national flower of both India and Vietnam.',
+        ],
+        conservationStatus:'Least Concern',
+        trivia:'In Buddhism, the lotus symbolises purity and enlightenment — rising unsullied from muddy waters.',
+      },
+      baseStats:{ hp:46, attack:9, defense:4 },
+      dropTable:[
+        { itemId:'water',          rate:0.80, qty:[1,3] },
+        { itemId:'sunlight',       rate:0.60, qty:[1,2] },
+        { itemId:'seed_lotus_monk',rate:0.35, qty:[1,1] },
+      ],
+      captureRate:0.55, statScale:{ hp:1.06, attack:1.05, defense:1.05 },
+    },
+  },
+
+  guardianBase: {
+    pitcher_knight:  { name:'Pitcher-Knight', icon:'🏺', baseHp:60, baseAttack:8,  hpPerLevel:10, attackPerLevel:3 },
+    snap_drake:      { name:'Snap-Drake',     icon:'🌿', baseHp:45, baseAttack:12, hpPerLevel:7,  attackPerLevel:4 },
+    puffer_fern:     { name:'Puffer-Fern',   icon:'🍄', baseHp:55, baseAttack:9,  hpPerLevel:9,  attackPerLevel:3 },
+    rafflesia_king:  { name:'Rafflesia King',icon:'🌺', baseHp:75, baseAttack:6,  hpPerLevel:12, attackPerLevel:2 },
+    bramble_cat:     { name:'Bramble-Cat',   icon:'🫐', baseHp:48, baseAttack:13, hpPerLevel:7,  attackPerLevel:4 },
+    sun_beamer:      { name:'Sun-Beamer',    icon:'🌻', baseHp:52, baseAttack:10, hpPerLevel:8,  attackPerLevel:3 },
+    baobab_sentinel: { name:'Baobab Sentinel',icon:'🌳',baseHp:85, baseAttack:7,  hpPerLevel:14, attackPerLevel:2 },
+    willow_weeper:   { name:'Willow-Weeper', icon:'🍃', baseHp:54, baseAttack:9,  hpPerLevel:9,  attackPerLevel:3 },
+    cactus_sentry:   { name:'Cactus Sentry', icon:'🌵', baseHp:50, baseAttack:11, hpPerLevel:8,  attackPerLevel:4 },
+    lotus_monk:      { name:'Lotus-Monk',    icon:'🪷', baseHp:56, baseAttack:9,  hpPerLevel:9,  attackPerLevel:3 },
+  },
+
+  levelUpCost: (level) => Math.ceil(1 + level * 0.8),
+  hatchCost: 3,
+
+  captureChance(enemy, currentHp) {
+    const hpRatio = currentHp / enemy.maxHp;
+    const base    = DATA.monsters[enemy.monsterId].captureRate;
+    return Math.min(0.95, base * (1 - hpRatio) * 2.2);
+  },
+};
+// ============================================================
+//  state.js — Centralised mutable game state
+// ============================================================
+
+const State = (() => {
+
+  const _state = {
+    inventory: {
+      water:               3,
+      seed_pitcher_knight: 1,
+    },
+    seeds: [
+      { seedItemId: 'seed_pitcher_knight', monsterId: 'pitcher_knight' }
+    ],
+    guardians: [],
+    activeGuardianIndex: null,
+    battle: null,
+    encounterCount: 0,
+    tutorialDone: false,
+  };
+
+  return {
+    get: () => _state,
+
+    addItem(itemId, qty = 1) {
+      _state.inventory[itemId] = (_state.inventory[itemId] || 0) + qty;
+    },
+
+    removeItem(itemId, qty = 1) {
+      if (!this.hasItem(itemId, qty)) return false;
+      _state.inventory[itemId] -= qty;
+      return true;
+    },
+
+    hasItem(itemId, qty = 1) {
+      return (_state.inventory[itemId] || 0) >= qty;
+    },
+
+    itemCount(itemId) {
+      return _state.inventory[itemId] || 0;
+    },
+
+    addSeed(seedItemId) {
+      const itemDef = DATA.items[seedItemId];
+      if (!itemDef) return;
+      _state.seeds.push({ seedItemId, monsterId: itemDef.monsterId });
+    },
+
+    removeSeed(index) {
+      _state.seeds.splice(index, 1);
+    },
+
+    addGuardian(guardian) {
+      _state.guardians.push(guardian);
+      if (_state.activeGuardianIndex === null) _state.activeGuardianIndex = 0;
+    },
+
+    getActiveGuardian() {
+      if (_state.activeGuardianIndex === null) return null;
+      return _state.guardians[_state.activeGuardianIndex] || null;
+    },
+
+    setActiveGuardian(index) {
+      if (index >= 0 && index < _state.guardians.length) {
+        _state.activeGuardianIndex = index;
+      }
+    },
+
+    completeTutorial() {
+      _state.tutorialDone = true;
+    },
+  };
+})();
+// ============================================================
+//  monsters.js — Monster class + Three.js 3D renderer
+// ============================================================
+
+class Monster {
+  constructor(monsterId, level = 1) {
+    this.monsterId = monsterId;
+    this.level     = level;
+    const def      = DATA.monsters[monsterId];
+    const scale    = def.statScale;
+    this.maxHp     = Math.round(def.baseStats.hp     * Math.pow(scale.hp,     level - 1));
+    this.attack    = Math.round(def.baseStats.attack  * Math.pow(scale.attack, level - 1));
+    this.defense   = Math.round(def.baseStats.defense * Math.pow(scale.defense,level - 1));
+    this.currentHp = this.maxHp;
+    this.name      = def.name;
+  }
+  isAlive()       { return this.currentHp > 0; }
+  takeDamage(dmg) { this.currentHp = Math.max(0, this.currentHp - dmg); }
+  rollDrops() {
+    const drops = [];
+    // Always drop water 1-3
+    drops.push({ itemId: 'water', qty: 1 + Math.floor(Math.random() * 3) });
+    // Always drop sunlight 1-3
+    drops.push({ itemId: 'sunlight', qty: 1 + Math.floor(Math.random() * 3) });
+    // Chance for seed
+    for (const entry of DATA.monsters[this.monsterId].dropTable) {
+      if (DATA.items[entry.itemId]?.type === 'seed' && Math.random() < entry.rate) {
+        drops.push({ itemId: entry.itemId, qty: 1 });
+      }
+    }
+    return drops;
+  }
+  attackTarget(target) {
+    const dmg = Math.max(1, this.attack - (target.defense||0) + Math.floor(Math.random()*5) - 2);
+    target.currentHp = Math.max(0, target.currentHp - dmg);
+    return dmg;
+  }
+}
+
+// ============================================================
+//  Three.js Renderer
+// ============================================================
+const MonsterRenderer = (() => {
+
+  let _scene, _camera, _renderer, _monster, _shadow;
+  let _animFrame, _floatT = 0;
+
+  // ── helpers ───────────────────────────────────────────────
+  const M = (hex, emitHex, shine=30) => {
+    const m = new THREE.MeshPhongMaterial({ color: hex, shininess: shine, specular: new THREE.Color(0x333333) });
+    if (emitHex) { m.emissive = new THREE.Color(emitHex); m.emissiveIntensity = 0.55; }
+    return m;
+  };
+  const A = (g, geo, mat, px=0,py=0,pz=0,rx=0,ry=0,rz=0,sx=1,sy=1,sz=1) => {
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(px,py,pz);
+    mesh.rotation.set(rx,ry,rz);
+    mesh.scale.set(sx,sy,sz);
+    g.add(mesh);
+  };
+
+  // ── spawn ─────────────────────────────────────────────────
+  function spawn(monsterId) {
+    if (_renderer) dispose();
+    // Retry until canvas has real dimensions
+    let attempts = 0;
+    const tryInit = () => {
+      const c = document.getElementById('monster-canvas');
+      const p = c && c.parentElement;
+      if (p && p.offsetWidth > 10 && p.offsetHeight > 10) {
+        _init(monsterId);
+      } else if (++attempts < 20) {
+        setTimeout(tryInit, 80);
+      }
+    };
+    setTimeout(tryInit, 100);
+  }
+
+  function _init(monsterId) {
+    const canvas = document.getElementById('monster-canvas');
+    if (!canvas) return;
+
+    // Force canvas to fill its parent container
+    const parent = canvas.parentElement;
+    const W = parent ? parent.offsetWidth  || window.innerWidth  : window.innerWidth;
+    const H = parent ? parent.offsetHeight || Math.round(window.innerHeight * 0.52) : Math.round(window.innerHeight * 0.52);
+    // Fallback if parent has no height yet
+    const FW = W  > 10 ? W  : window.innerWidth;
+    const FH = H  > 10 ? H  : Math.round(window.innerHeight * 0.52);
+    canvas.width  = FW; canvas.height = FH;
+    canvas.style.width  = FW + 'px';
+    canvas.style.height = FH + 'px';
+    const realW = FW, realH = FH;
+
+    _scene  = new THREE.Scene();
+    _floatT = 0;
+
+    _camera = new THREE.PerspectiveCamera(50, realW/realH, 0.1, 100);
+    _camera.position.set(0, 1.6, 3.8);
+    _camera.lookAt(0, 0.9, 0);
+
+    _renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+    _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    _renderer.setSize(realW, realH, false);
+    _renderer.setClearColor(0x000000, 0);
+
+    _scene.add(new THREE.AmbientLight(0x88ccaa, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+    sun.position.set(3, 8, 5); _scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x44ff88, 0.4);
+    fill.position.set(-4, 2, -2); _scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xaaffdd, 0.3);
+    rim.position.set(0, -2, -4); _scene.add(rim);
+    const top = new THREE.PointLight(0xffffff, 0.5, 10);
+    top.position.set(0, 5, 2); _scene.add(top);
+
+    _monster = _build(monsterId);
+    _monster.position.set(0, 0.4, 0);
+    _scene.add(_monster);
+
+    _shadow = new THREE.Mesh(
+      new THREE.CircleGeometry(0.32, 32),
+      new THREE.MeshBasicMaterial({ color:0x000000, transparent:true, opacity:0.4 })
+    );
+    _shadow.rotation.x = -Math.PI/2;
+    _shadow.position.set(0, -0.55, 0);
+    _scene.add(_shadow);
+
+    _animate();
+  }
+
+  function _animate() {
+    _animFrame = requestAnimationFrame(_animate);
+    _floatT += 0.018;
+    if (_monster) {
+      _monster.position.y = -0.1 + Math.sin(_floatT) * 0.09;
+      _monster.rotation.y += 0.007;
+      if (_shadow) {
+        const s = 0.85 + Math.sin(_floatT) * 0.12;
+        _shadow.scale.set(s, s, s);
+        _shadow.material.opacity = 0.3 + (1 - s) * 0.35;
+      }
+    }
+    if (_renderer && _scene && _camera) _renderer.render(_scene, _camera);
+  }
+
+  function playHit() {
+    if (!_monster) return;
+    const ox = _monster.position.x; let t = 0;
+    const iv = setInterval(() => {
+      _monster.position.x = ox + (Math.random()-0.5)*0.2;
+      if (++t > 8) { _monster.position.x = ox; clearInterval(iv); }
+    }, 40);
+    _monster.traverse(c => {
+      if (!c.isMesh || !c.material) return;
+      c.material.emissive = new THREE.Color(0xff2200);
+      c.material.emissiveIntensity = 0.9;
+      setTimeout(() => { if (c.material) { c.material.emissive.set(0x000000); c.material.emissiveIntensity = 0; }}, 280);
+    });
+  }
+
+  function dispose() {
+    if (_animFrame) cancelAnimationFrame(_animFrame);
+    if (_renderer)  _renderer.dispose();
+    _scene = _camera = _renderer = _monster = _shadow = null;
+    _floatT = 0;
+  }
+
+  function resize() {
+    if (!_renderer || !_camera) return;
+    const W = window.innerWidth, H = Math.round(window.innerHeight * 0.55);
+    _camera.aspect = W/H; _camera.updateProjectionMatrix();
+    _renderer.setSize(realW, realH, false);
+  }
+
+  // ── model router ──────────────────────────────────────────
+  function _build(id) {
+    const builders = {
+      pitcher_knight:  _buildPitcherKnight,
+      snap_drake:      _buildSnapDrake,
+      puffer_fern:     _buildPufferFern,
+      rafflesia_king:  _buildRafflesiaKing,
+      bramble_cat:     _buildBrambleCat,
+      sun_beamer:      _buildSunBeamer,
+      baobab_sentinel: _buildBaobabSentinel,
+      willow_weeper:   _buildWillowWeeper,
+      cactus_sentry:   _buildCactusSentry,
+      lotus_monk:      _buildLotusMonk,
+    };
+    return (builders[id] || builders.pitcher_knight)();
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  1. PITCHER-KNIGHT
+  // ══════════════════════════════════════════════════════════
+  function _buildPitcherKnight() {
+    const g = new THREE.Group();
+    const green=M(0x1a5c35),gL=M(0x2e7d4f),gB=M(0x4aab68);
+    const armor=M(0x8b7040),aD=M(0x4a3820);
+    const eye=M(0xff6b35,0xff3300),pupil=new THREE.MeshBasicMaterial({color:0x110500});
+    const acid=new THREE.MeshBasicMaterial({color:0x4aab68,transparent:true,opacity:0.7});
+    A(g,new THREE.SphereGeometry(0.13,10,8),aD,-0.22,0.04,0.07);
+    A(g,new THREE.SphereGeometry(0.13,10,8),aD, 0.22,0.04,0.07);
+    A(g,new THREE.CylinderGeometry(0.10,0.13,0.42,10),armor,-0.22,0.26,0);
+    A(g,new THREE.CylinderGeometry(0.10,0.13,0.42,10),armor, 0.22,0.26,0);
+    A(g,new THREE.CylinderGeometry(0.25,0.30,0.62,14),green,0,0.72,0);
+    [0.47,0.63,0.79].forEach(y=>A(g,new THREE.TorusGeometry(0.27,0.026,8,22),gL,0,y,0));
+    A(g,new THREE.TorusGeometry(0.26,0.042,10,22),gL,0,1.03,0);
+    A(g,new THREE.CircleGeometry(0.20,18),acid,0,1.05,0,-Math.PI/2,0,0);
+    [-0.44,0.44].forEach((x,i)=>{
+      A(g,new THREE.SphereGeometry(0.17,10,8),armor,x,0.94,0,0,0,0,1,0.72,0.9);
+      const d=i===0?-1:1;
+      A(g,new THREE.ConeGeometry(0.045,0.22,7),aD,x+d*0.13,1.08,0,0,0,-d*0.45);
+    });
+    [-1,1].forEach(s=>{
+      A(g,new THREE.CylinderGeometry(0.08,0.10,0.48,9),armor,s*0.52,0.68,0,0,0,s*0.52);
+      A(g,new THREE.SphereGeometry(0.13,10,8),green,s*0.74,0.50,0);
+      [0.44,0.52,0.60].forEach(y=>A(g,new THREE.TorusGeometry(0.10,0.022,6,12),gL,s*0.74,y,0,0,Math.PI/2,0));
+    });
+    A(g,new THREE.SphereGeometry(0.30,14,10,0,Math.PI*2,0,Math.PI*0.58),armor,0,1.16,0);
+    A(g,new THREE.CylinderGeometry(0.34,0.30,0.06,16),aD,0,1.08,0);
+    for(let i=0;i<10;i++){const a=i/10*Math.PI*2;A(g,new THREE.ConeGeometry(0.034,0.12,5),aD,Math.cos(a)*0.33,1.07,Math.sin(a)*0.33,0,0,Math.PI);}
+    [-0.11,0.11].forEach(x=>{
+      A(g,new THREE.SphereGeometry(0.072,10,8),eye,x,1.07,0.24);
+      A(g,new THREE.SphereGeometry(0.036,8,6),pupil,x,1.07,0.30);
+    });
+    [[-0.44,1.10,0.10,0,0,0.75],[0.44,1.10,0.10,0,0,-0.75]].forEach(([px,py,pz,rx,ry,rz])=>A(g,new THREE.CylinderGeometry(0.018,0.010,0.28,6),gB,px,py,pz,rx,ry,rz));
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  2. SNAP-DRAKE
+  // ══════════════════════════════════════════════════════════
+  function _buildSnapDrake() {
+    const g = new THREE.Group();
+    const grn=M(0x2d7a3a),dg=M(0x1a4a22),red=M(0xff2222,0xff0000),wht=M(0xffffff),ylw=M(0xffff00,0xaaaa00);
+    A(g,new THREE.SphereGeometry(0.28,10,8),grn,0,0.55,0,0,0,0,1.2,1,0.9);
+    A(g,new THREE.CylinderGeometry(0.05,0.15,0.6,8),dg,-0.45,0.45,0,0,0,Math.PI/3);
+    [-0.18,0.18].forEach(x=>{A(g,new THREE.CylinderGeometry(0.07,0.09,0.4,8),dg,x,0.22,0);A(g,new THREE.SphereGeometry(0.09,8,6),dg,x,0.04,0.08);});
+    A(g,new THREE.CylinderGeometry(0.12,0.16,0.3,8),grn,0.15,0.82,0,0,0,-0.3);
+    A(g,new THREE.SphereGeometry(0.22,10,8),dg,0.36,0.95,0,0,0,0,1,0.5,1.1);
+    A(g,new THREE.SphereGeometry(0.22,10,8),dg,0.36,1.08,0,0,0,0,1,0.5,1.1);
+    A(g,new THREE.SphereGeometry(0.18,10,8),red,0.36,1.01,0,0,0,0,1,0.3,1);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;A(g,new THREE.ConeGeometry(0.03,0.1,4),wht,0.36+Math.cos(a)*0.18,1.01,Math.sin(a)*0.18);}
+    A(g,new THREE.CylinderGeometry(0.05,0.07,0.35,6),grn,-0.05,0.65,0.2,0.5,0,-0.5);
+    A(g,new THREE.CylinderGeometry(0.05,0.07,0.35,6),grn,-0.05,0.65,-0.2,-0.5,0,0.5);
+    A(g,new THREE.SphereGeometry(0.05,8,6),ylw,0.28,1.0,0.16);
+    A(g,new THREE.SphereGeometry(0.05,8,6),ylw,0.28,1.0,-0.16);
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  3. PUFFER-FERN
+  // ══════════════════════════════════════════════════════════
+  function _buildPufferFern() {
+    const g = new THREE.Group();
+    const wht=M(0xeeeedd),stem=M(0x8fbc5a),face=M(0x555533),spot=M(0xccccaa);
+    A(g,new THREE.SphereGeometry(0.45,14,12),wht,0,0.65,0);
+    for(let i=0;i<12;i++){const phi=Math.acos(1-2*(i+0.5)/12),th=Math.PI*(1+Math.sqrt(5))*i;A(g,new THREE.SphereGeometry(0.07,6,6),spot,0.42*Math.sin(phi)*Math.cos(th),0.65+0.42*Math.cos(phi),0.42*Math.sin(phi)*Math.sin(th));}
+    [-0.15,0.15].forEach(x=>A(g,new THREE.CylinderGeometry(0.06,0.08,0.22,6),stem,x,0.18,0));
+    A(g,new THREE.SphereGeometry(0.06,8,6),face,-0.12,0.75,0.38);
+    A(g,new THREE.SphereGeometry(0.06,8,6),face, 0.12,0.75,0.38);
+    A(g,new THREE.SphereGeometry(0.03,6,6),M(0x111111),-0.12,0.75,0.43);
+    A(g,new THREE.SphereGeometry(0.03,6,6),M(0x111111), 0.12,0.75,0.43);
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  4. RAFFLESIA KING
+  // ══════════════════════════════════════════════════════════
+  function _buildRafflesiaKing() {
+    const g = new THREE.Group();
+    const red=M(0xcc2200),dRed=M(0x881100),spots=M(0xff8800),cream=M(0xffddaa),ylw=M(0xffff00,0xaaaa00);
+    for(let i=0;i<5;i++){
+      const a=i/5*Math.PI*2;
+      A(g,new THREE.SphereGeometry(0.36,10,8),red,Math.cos(a)*0.45,0.25,Math.sin(a)*0.45,0,0,0,1,0.3,0.9);
+      for(let j=0;j<3;j++){const r2=0.15+Math.random()*0.15;A(g,new THREE.SphereGeometry(0.05,6,6),spots,Math.cos(a)*r2*1.2,0.35,Math.sin(a)*r2*1.2);}
+    }
+    A(g,new THREE.CylinderGeometry(0.22,0.25,0.18,14),dRed,0,0.22,0);
+    A(g,new THREE.CylinderGeometry(0.16,0.18,0.08,14),cream,0,0.32,0);
+    A(g,new THREE.SphereGeometry(0.05,8,6),ylw,-0.07,0.38,0.12);
+    A(g,new THREE.SphereGeometry(0.05,8,6),ylw, 0.07,0.38,0.12);
+    [-0.18,0.18].forEach(x=>A(g,new THREE.CylinderGeometry(0.06,0.08,0.18,6),dRed,x,0.06,0));
+    g.scale.set(0.85,0.85,0.85); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  5. BRAMBLE-CAT
+  // ══════════════════════════════════════════════════════════
+  function _buildBrambleCat() {
+    const g = new THREE.Group();
+    const vine=M(0x3a5c1a),thorn=M(0x8b6a00),berry=M(0x220044),gEye=M(0x88ff22,0x44aa00);
+    A(g,new THREE.SphereGeometry(0.28,10,8),vine,0,0.55,0,0,0,0,1.3,0.9,0.8);
+    A(g,new THREE.SphereGeometry(0.22,10,8),vine,0.3,0.82,0);
+    A(g,new THREE.ConeGeometry(0.07,0.16,5),vine,0.22,1.00, 0.12,0,0,-0.3);
+    A(g,new THREE.ConeGeometry(0.07,0.16,5),vine,0.22,1.00,-0.12,0,0,-0.3);
+    A(g,new THREE.SphereGeometry(0.05,8,6),gEye,0.48,0.86, 0.10);
+    A(g,new THREE.SphereGeometry(0.05,8,6),gEye,0.48,0.86,-0.10);
+    [-0.16,0.16].forEach((x,i)=>{A(g,new THREE.CylinderGeometry(0.06,0.08,0.42,6),vine,x,0.24,i===0?0.1:-0.1);A(g,new THREE.SphereGeometry(0.07,6,6),vine,x,0.04,i===0?0.14:-0.14);});
+    A(g,new THREE.CylinderGeometry(0.03,0.07,0.55,6),vine,-0.4,0.52,0,0,0,Math.PI/4);
+    for(let i=0;i<8;i++){const a=i/8*Math.PI*2;A(g,new THREE.ConeGeometry(0.025,0.12,4),thorn,Math.cos(a)*0.28,0.55+Math.sin(a)*0.12,Math.sin(a)*0.22,a,0,0);}
+    for(let i=0;i<5;i++){A(g,new THREE.SphereGeometry(0.04,6,6),berry,(Math.random()-0.5)*0.4,0.45+Math.random()*0.3,(Math.random()-0.5)*0.3);}
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  6. SUN-BEAMER
+  // ══════════════════════════════════════════════════════════
+  function _buildSunBeamer() {
+    const g = new THREE.Group();
+    const ylw=M(0xffcc00,0xaa8800),dYlw=M(0xcc8800),brn=M(0x4a2800),grn=M(0x2a6a1a);
+    A(g,new THREE.CylinderGeometry(0.08,0.12,1.0,8),grn,0,0.55,0);
+    A(g,new THREE.SphereGeometry(0.16,8,6),grn, 0.18,0.5,0,0,0,0.6,1,0.4,0.7);
+    A(g,new THREE.SphereGeometry(0.16,8,6),grn,-0.18,0.7,0,0,0,-0.6,1,0.4,0.7);
+    A(g,new THREE.CylinderGeometry(0.28,0.28,0.1,14),brn,0,1.12,0);
+    for(let i=0;i<12;i++){const a=i/12*Math.PI*2;A(g,new THREE.SphereGeometry(0.1,8,6),ylw,Math.cos(a)*0.36,1.12,Math.sin(a)*0.36,0,0,0,0.7,0.5,1);}
+    A(g,new THREE.SphereGeometry(0.06,8,6),M(0xffffff),-0.08,1.16,0.24);
+    A(g,new THREE.SphereGeometry(0.06,8,6),M(0xffffff), 0.08,1.16,0.24);
+    A(g,new THREE.SphereGeometry(0.03,6,6),M(0x111111),-0.08,1.16,0.29);
+    A(g,new THREE.SphereGeometry(0.03,6,6),M(0x111111), 0.08,1.16,0.29);
+    A(g,new THREE.SphereGeometry(0.30,12,10),M(0xffff88,0xffcc00),0,1.12,0,0,0,0,1,0.3,1);
+    A(g,new THREE.CylinderGeometry(0.04,0.06,0.4,6),grn,-0.2,0.75,0,0,0,0.7);
+    A(g,new THREE.CylinderGeometry(0.04,0.06,0.4,6),grn, 0.2,0.75,0,0,0,-0.7);
+    [-0.1,0.1].forEach(x=>A(g,new THREE.SphereGeometry(0.08,8,6),grn,x,0.06,0.06));
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  7. BAOBAB SENTINEL
+  // ══════════════════════════════════════════════════════════
+  function _buildBaobabSentinel() {
+    const g = new THREE.Group();
+    const bark=M(0x8b6a40),dBark=M(0x5c4020),leaf=M(0x2a6a1a),org=M(0xff8800,0xcc4400);
+    A(g,new THREE.CylinderGeometry(0.36,0.44,0.9,12),bark,0,0.55,0);
+    for(let i=0;i<8;i++){const a=i/8*Math.PI*2;A(g,new THREE.SphereGeometry(0.1,6,6),dBark,Math.cos(a)*0.36,0.4+Math.random()*0.4,Math.sin(a)*0.36);}
+    [-0.22,0.22].forEach(x=>{A(g,new THREE.CylinderGeometry(0.1,0.13,0.22,8),bark,x,0.1,0);A(g,new THREE.SphereGeometry(0.12,8,6),dBark,x,0.01,0.08);});
+    [-0.5,0.5].forEach((x,i)=>{A(g,new THREE.CylinderGeometry(0.1,0.14,0.38,8),bark,x,0.72,0,0,0,i===0?0.6:-0.6);A(g,new THREE.SphereGeometry(0.16,8,6),dBark,x<0?-0.7:0.7,0.56,0);});
+    for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=0.2+Math.random()*0.22;A(g,new THREE.SphereGeometry(0.18,8,6),leaf,Math.cos(a)*r,1.18+Math.random()*0.2,Math.sin(a)*r);}
+    A(g,new THREE.SphereGeometry(0.22,8,6),leaf,0,1.28,0);
+    A(g,new THREE.SphereGeometry(0.07,8,6),org,-0.12,0.78,0.32);
+    A(g,new THREE.SphereGeometry(0.07,8,6),org, 0.12,0.78,0.32);
+    A(g,new THREE.SphereGeometry(0.035,6,6),M(0x111111),-0.12,0.78,0.38);
+    A(g,new THREE.SphereGeometry(0.035,6,6),M(0x111111), 0.12,0.78,0.38);
+    g.scale.set(0.72,0.72,0.72); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  8. WILLOW-WEEPER
+  // ══════════════════════════════════════════════════════════
+  function _buildWillowWeeper() {
+    const g = new THREE.Group();
+    const pale=M(0xc8e8d0),dp=M(0x7aaa88),wisp=M(0xaaddbb,0x44aa66);
+    A(g,new THREE.CylinderGeometry(0.1,0.18,0.8,10),pale,0,0.55,0);
+    A(g,new THREE.SphereGeometry(0.2,10,8),pale,0,1.04,0,0,0,0,1,1.1,1);
+    for(let i=0;i<10;i++){const a=i/10*Math.PI*2,r=0.15+Math.random()*0.08,len=0.4+Math.random()*0.35;A(g,new THREE.CylinderGeometry(0.012,0.006,len,4),dp,Math.cos(a)*r,1.04-len/2,Math.sin(a)*r,0.3*Math.cos(a),0,0.3*Math.sin(a));}
+    A(g,new THREE.SphereGeometry(0.055,8,6),wisp,-0.08,1.08,0.16);
+    A(g,new THREE.SphereGeometry(0.055,8,6),wisp, 0.08,1.08,0.16);
+    A(g,new THREE.CylinderGeometry(0.03,0.06,0.45,6),pale,-0.2,0.68,0,0,0,0.5);
+    A(g,new THREE.CylinderGeometry(0.03,0.06,0.45,6),pale, 0.2,0.68,0,0,0,-0.5);
+    for(let i=0;i<5;i++){const a=i/5*Math.PI*2;A(g,new THREE.CylinderGeometry(0.02,0.01,0.3,4),dp,Math.cos(a)*0.12,0.06,Math.sin(a)*0.12,0.4*Math.cos(a),0,0.4*Math.sin(a));}
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  9. CACTUS SENTRY
+  // ══════════════════════════════════════════════════════════
+  function _buildCactusSentry() {
+    const g = new THREE.Group();
+    const cac=M(0x2a7a3a),dCac=M(0x1a5a28),spine=M(0xddcc88),org=M(0xff9900,0xff5500);
+    A(g,new THREE.CylinderGeometry(0.18,0.22,1.0,12),cac,0,0.55,0);
+    A(g,new THREE.CylinderGeometry(0.10,0.13,0.4,10),cac,-0.34,0.75,0,0,0,Math.PI/2);
+    A(g,new THREE.CylinderGeometry(0.10,0.10,0.35,10),cac,-0.55,0.92,0,0,0,-0.1);
+    A(g,new THREE.CylinderGeometry(0.10,0.13,0.4,10),cac, 0.34,0.65,0,0,0,-Math.PI/2);
+    A(g,new THREE.CylinderGeometry(0.10,0.10,0.35,10),cac, 0.55,0.82,0,0,0,0.1);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;A(g,new THREE.BoxGeometry(0.02,0.9,0.02),dCac,Math.cos(a)*0.18,0.55,Math.sin(a)*0.18);}
+    for(let y=0.2;y<1.0;y+=0.25){for(let i=0;i<6;i++){const a=i/6*Math.PI*2;A(g,new THREE.CylinderGeometry(0.006,0.003,0.12,3),spine,Math.cos(a)*0.2,y,Math.sin(a)*0.2,0,a,Math.PI/2);}}
+    A(g,new THREE.SphereGeometry(0.05,8,6),org,-0.04,0.82,0.18);
+    A(g,new THREE.SphereGeometry(0.05,8,6),org, 0.08,0.82,0.16);
+    [-0.16,0.16].forEach(x=>A(g,new THREE.SphereGeometry(0.1,8,6),dCac,x,0.06,0));
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  // ══════════════════════════════════════════════════════════
+  //  10. LOTUS-MONK
+  // ══════════════════════════════════════════════════════════
+  function _buildLotusMonk() {
+    const g = new THREE.Group();
+    const pink=M(0xff88aa,0xaa4466),dPink=M(0xcc5577),pad=M(0x2a6a1a),robe=M(0xffaacc);
+    const cream=M(0xffeedd),gold=M(0xffcc44,0xaa8800),eye=M(0x886655);
+    A(g,new THREE.CylinderGeometry(0.48,0.48,0.05,16),pad,0,0.06,0);
+    A(g,new THREE.SphereGeometry(0.26,10,8),robe,0,0.42,0,0,0,0,1,1.1,0.9);
+    A(g,new THREE.SphereGeometry(0.18,10,8),cream,0,0.78,0);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2;A(g,new THREE.SphereGeometry(0.14,8,6),pink,Math.cos(a)*0.28,0.4,Math.sin(a)*0.28,0,0,0,0.7,1.2,0.5);}
+    A(g,new THREE.SphereGeometry(0.1,8,6),dPink,0,0.98,0);
+    for(let i=0;i<5;i++){const a=i/5*Math.PI*2;A(g,new THREE.SphereGeometry(0.07,6,6),pink,Math.cos(a)*0.14,0.96,Math.sin(a)*0.14,0,0,0,0.6,1.1,0.5);}
+    A(g,new THREE.SphereGeometry(0.04,8,6),eye,-0.07,0.80,0.14,0,0,0,1,0.4,1);
+    A(g,new THREE.SphereGeometry(0.04,8,6),eye, 0.07,0.80,0.14,0,0,0,1,0.4,1);
+    A(g,new THREE.SphereGeometry(0.07,8,6),cream,0,0.38,0.22);
+    A(g,new THREE.TorusGeometry(0.22,0.02,6,24),gold,0,1.04,0);
+    g.scale.set(1.4,1.4,1.4); return g;
+  }
+
+  return { spawn, dispose, playHit, resize };
+})();
+// ============================================================
+//  guardian.js — Player Guardian (hatched from seed)
+// ============================================================
+
+class Guardian {
+  constructor(monsterId) {
+    const def = DATA.guardianBase[monsterId];
+    this.monsterId   = monsterId;
+    this.name        = def.name;
+    this.icon        = def.icon;
+    this.level       = 1;
+    this.xp          = 0;
+
+    this.baseHp      = def.baseHp;
+    this.baseAttack  = def.baseAttack;
+    this.hpPerLevel  = def.hpPerLevel;
+    this.attackPerLevel = def.attackPerLevel;
+
+    this._recalcStats();
+    this.currentHp = this.maxHp;
+    this.defense    = 2;   // flat base
+  }
+
+  _recalcStats() {
+    this.maxHp  = this.baseHp     + (this.level - 1) * this.hpPerLevel;
+    this.attack = this.baseAttack + (this.level - 1) * this.attackPerLevel;
+  }
+
+  isAlive() { return this.currentHp > 0; }
+
+  takeDamage(dmg) {
+    this.currentHp = Math.max(0, this.currentHp - dmg);
+  }
+
+  heal(amount) {
+    this.currentHp = Math.min(this.maxHp, this.currentHp + amount);
+  }
+
+  healFull() { this.currentHp = this.maxHp; }
+
+  // Returns damage dealt
+  attackTarget(target) {
+    const rawDmg = this.attack + Math.floor(Math.random() * 5);
+    const def    = target.defense || 0;
+    const dmg    = Math.max(1, rawDmg - def);
+    target.takeDamage(dmg);
+    return dmg;
+  }
+
+  // ── Levelling ──────────────────────────────────────────────
+  canLevelUp() {
+    const cost = DATA.levelUpCost(this.level);
+    return State.hasItem('sunlight', cost);
+  }
+
+  levelUp() {
+    const cost = DATA.levelUpCost(this.level);
+    if (!State.removeItem('sunlight', cost)) return { success: false, reason: 'Not enough Sunlight.' };
+
+    const prevMaxHp  = this.maxHp;
+    const prevAtk    = this.attack;
+    this.level++;
+    this._recalcStats();
+    // Heal proportionally when levelling up
+    this.currentHp = Math.min(this.maxHp, this.currentHp + this.hpPerLevel);
+
+    return {
+      success: true,
+      hpGain:  this.maxHp  - prevMaxHp,
+      atkGain: this.attack - prevAtk,
+      newLevel: this.level,
+    };
+  }
+
+  // ── Serialise summary for UI ──────────────────────────────
+  summary() {
+    return {
+      name:      this.name,
+      icon:      this.icon,
+      level:     this.level,
+      currentHp: this.currentHp,
+      maxHp:     this.maxHp,
+      attack:    this.attack,
+      defense:   this.defense,
+    };
+  }
+}
+
+// ── Factory: hatch a seed into a Guardian ─────────────────────
+const Hatchery = {
+  canHatch(seedIndex) {
+    const seed = State.get().seeds[seedIndex];
+    if (!seed) return { ok: false, reason: 'No seed.' };
+    const cost = DATA.hatchCost;
+    if (!State.hasItem('water', cost)) {
+      return { ok: false, reason: `Need ${cost} 💧 Water (have ${State.itemCount('water')}).` };
+    }
+    return { ok: true, seed, cost };
+  },
+
+  hatch(seedIndex) {
+    const check = this.canHatch(seedIndex);
+    if (!check.ok) return check;
+    State.removeItem('water', check.cost);
+    // Remove seed from inventory too
+    State.removeItem(check.seed.seedItemId, 1);
+    State.removeSeed(seedIndex);
+    const g = new Guardian(check.seed.monsterId);
+    State.addGuardian(g);
+    return { ok: true, guardian: g };
+  },
+};
+// ============================================================
+//  battle.js — Turn-based battle engine
+// ============================================================
+
+const Battle = (() => {
+
+  let _enemy      = null;
+  let _guardian   = null;
+  let _playerTurn = true;
+  let _busy       = false;
+
+  function start(monsterId, level = 1) {
+    _enemy      = new Monster(monsterId, level);
+    _guardian   = State.getActiveGuardian();
+    _playerTurn = true;
+    _busy       = false;
+
+    State.get().battle = { enemy: _enemy, active: true };
+
+    _renderEnemy();
+    _updateAllHUD();
+    _log(`A wild ${_enemy.name} (Lv ${_enemy.level}) appeared!`);
+    _setActionButtons(true);
+  }
+
+  // ── Player: Attack ─────────────────────────────────────────
+  function playerAttack() {
+    if (!_playerTurn || _busy) return;
+    if (!_guardian) {
+      UI.toast('No guardian! Go to Garden and hatch your seed first.');
+      return;
+    }
+    _busy = true;
+
+    const dmg = _guardian.attackTarget(_enemy);
+    _log(`${_guardian.name} attacks! ${_enemy.name} takes ${dmg} damage.`);
+    _playHitEffect('enemy');
+    _updateAllHUD();
+
+    if (!_enemy.isAlive()) { _onEnemyDefeated(); return; }
+
+    _playerTurn = false;
+    _setActionButtons(false);
+    setTimeout(_enemyTurn, 900);
+  }
+
+  // ── Player: Capture ────────────────────────────────────────
+  function attemptCapture() {
+    if (!_playerTurn || _busy) return;
+    if (!_guardian) {
+      UI.toast('No guardian! Go to Garden and hatch your seed first.');
+      return;
+    }
+    _busy = true;
+
+    const chance = DATA.captureChance(_enemy, _enemy.currentHp);
+    _log(`You throw a seed net! (${Math.round(chance * 100)}% chance…)`);
+    _playCaptureEffect();
+
+    setTimeout(() => {
+      if (Math.random() < chance) {
+        _log(`Gotcha! ${_enemy.name} was captured! Seed added.`);
+        const seedId = `seed_${_enemy.monsterId}`;
+        State.addSeed(seedId);
+        State.addItem(seedId, 1);
+        _endBattle('capture');
+      } else {
+        _log(`${_enemy.name} broke free! It attacks!`);
+        _busy = false;
+        _playerTurn = false;
+        _setActionButtons(false);
+        setTimeout(_enemyTurn, 800);
+      }
+    }, 1200);
+  }
+
+  // ── Enemy turn ─────────────────────────────────────────────
+  function _enemyTurn() {
+    if (!_enemy || !_enemy.isAlive()) return;
+    if (!_guardian) return;
+
+    const dmg = _enemy.attackTarget(_guardian);
+    _log(`${_enemy.name} attacks! ${_guardian.name} takes ${dmg} damage.`);
+    _playHitEffect('guardian');
+    _updateAllHUD();
+
+    if (!_guardian.isAlive()) {
+      _log(`${_guardian.name} fainted!`);
+      setTimeout(() => _endBattle('defeat'), 800);
+      return;
+    }
+
+    _playerTurn = true;
+    _busy       = false;
+    _setActionButtons(true);
+  }
+
+  function _onEnemyDefeated() {
+    const drops = _enemy.rollDrops();
+    for (const d of drops) {
+      State.addItem(d.itemId, d.qty);
+      if (DATA.items[d.itemId]?.type === 'seed') State.addSeed(d.itemId);
+    }
+    _log(`${_enemy.name} was defeated!`);
+    setTimeout(() => _endBattle('victory', drops), 600);
+  }
+
+  function _endBattle(outcome, drops = []) {
+    State.get().battle = { enemy: _enemy, active: false };
+    _setActionButtons(false);
+    if (_guardian) _guardian.healFull();
+    UI.showResult(outcome, drops, _enemy);
+  }
+
+  // ── HUD ────────────────────────────────────────────────────
+  function _updateAllHUD() { _updateEnemyHUD(); _updateGuardianHUD(); }
+
+  function _updateEnemyHUD() {
+    if (!_enemy) return;
+    const pct = (_enemy.currentHp / _enemy.maxHp) * 100;
+    document.getElementById('enemy-hp-bar').style.width = `${pct}%`;
+    document.getElementById('enemy-hp-text').textContent = `${_enemy.currentHp}/${_enemy.maxHp}`;
+    const tag = document.getElementById('hud-enemy-name');
+    if (tag) tag.textContent = `${_enemy.name} Lv${_enemy.level}`;
+  }
+
+  function _updateGuardianHUD() {
+    const g = _guardian;
+    if (!g) {
+      document.getElementById('guardian-name').textContent      = 'No Guardian';
+      document.getElementById('guardian-hp-text').textContent   = '—';
+      document.getElementById('guardian-level-tag').textContent = 'Lv —';
+      document.getElementById('guardian-hp-bar').style.width    = '0%';
+      document.getElementById('guardian-sprite').textContent    = '🌿';
+      return;
+    }
+    const pct = (g.currentHp / g.maxHp) * 100;
+    document.getElementById('guardian-name').textContent      = g.name;
+    document.getElementById('guardian-hp-bar').style.width    = `${pct}%`;
+    document.getElementById('guardian-hp-text').textContent   = `${g.currentHp}/${g.maxHp}`;
+    const inlineHp = document.getElementById('guardian-hp-text-inline');
+    if (inlineHp) inlineHp.textContent = `${g.currentHp}/${g.maxHp}`;
+    document.getElementById('guardian-level-tag').textContent = `Lv ${g.level}`;
+    document.getElementById('guardian-sprite').textContent    = g.icon;
+  }
+
+  function _renderEnemy() {
+    MonsterRenderer.spawn(_enemy.monsterId);
+    const tag = document.getElementById('enemy-name-tag');
+    if (tag) tag.textContent = `${_enemy.name} · Lv ${_enemy.level}`;
+  }
+
+  function _log(msg) {
+    const el = document.getElementById('battle-log-text');
+    if (el) el.textContent = msg;
+  }
+
+  function _setActionButtons(enabled) {
+    ['btn-attack', 'btn-capture'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !enabled;
+    });
+    const badge = document.getElementById('hud-turn-badge');
+    if (badge) badge.textContent = enabled ? 'YOUR TURN' : 'ENEMY TURN';
+  }
+
+  function _playHitEffect(target) {
+    if (target === 'enemy') {
+      MonsterRenderer.playHit('enemy');
+    } else {
+      MonsterRenderer.playHit('guardian');
+      // Also flash the sprite for non-marker mode
+      const el = document.getElementById('guardian-sprite-wrap');
+      if (el) {
+        el.classList.add('hit-flash');
+        setTimeout(() => el.classList.remove('hit-flash'), 350);
+      }
+    }
+  }
+
+  function _playCaptureEffect() {
+    const layer = document.getElementById('effects-layer');
+    if (!layer) return;
+    const div = document.createElement('div');
+    div.className = 'capture-ring';
+    layer.appendChild(div);
+    setTimeout(() => div.remove(), 1500);
+  }
+
+  return {
+    start, playerAttack, attemptCapture,
+    refreshGuardian() {
+      _guardian = State.getActiveGuardian();
+      _updateGuardianHUD();
+    },
+  };
+})();
+// ============================================================
+//  ui.js — Screen routing & all UI rendering
+// ============================================================
+
+const UI = (() => {
+
+  // ── Screen routing ────────────────────────────────────────
+  function _setBattleUI(visible) {
+    const top = document.getElementById('hud-top');
+    const bot = document.getElementById('battle-bottom');
+    if (top) top.classList.toggle('battle-active', visible);
+    if (bot) bot.classList.toggle('battle-active', visible);
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+    if (id === 'screen-hub') _updateHub();
+    // Hide battle UI on any screen except battle
+    if (id !== 'screen-battle') _setBattleUI(false);
+  }
+
+  function _updateHub() {
+    const s = State.get();
+    _setText('hub-guardian-count',  s.guardians.length);
+    _setText('hub-water-count',     State.itemCount('water'));
+    _setText('hub-sunlight-count',  State.itemCount('sunlight'));
+  }
+
+  function _setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  // ── Hub navigation ────────────────────────────────────────
+  function openBattle()    { Game.enterBattle(); }
+  function openGarden()    { _renderGarden(); showScreen('screen-garden'); }
+  function openInventory() { _renderInventory(); showScreen('screen-inventory'); }
+  function closeToHub()    { showScreen('screen-hub'); }
+  function exitBattle()    { Game.exitBattle(); }
+
+  // ── Garden tab switching ──────────────────────────────────
+  function switchGardenTab(tab) {
+    document.querySelectorAll('#garden-tabs .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#screen-garden .tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelector(`#garden-tabs [data-tab="${tab}"]`)?.classList.add('active');
+    document.getElementById(`garden-tab-${tab}`)?.classList.add('active');
+  }
+
+  // ── Garden ────────────────────────────────────────────────
+  function _renderGarden() {
+    _renderTeam();
+    _renderHatchery();
+    // Ensure only active tab is visible
+    document.querySelectorAll('#screen-garden .tab-content').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector('#garden-tabs .tab.active');
+    const tabName = activeTab?.dataset?.tab || 'team';
+    document.getElementById(`garden-tab-${tabName}`)?.classList.add('active');
+  }
+
+  function _renderTeam() {
+    const list   = document.getElementById('garden-team-list');
+    const team   = State.get().guardians;
+    const actIdx = State.get().activeGuardianIndex;
+    list.innerHTML = '';
+
+    if (team.length === 0) {
+      list.innerHTML = '<p class="empty-msg">No guardians yet.<br>Hatch a seed in the Hatchery!</p>';
+      return;
+    }
+
+    team.forEach((g, i) => {
+      const isActive = i === actIdx;
+      const card = document.createElement('div');
+      card.className = 'guardian-card' + (isActive ? ' active-guardian' : '');
+      card.innerHTML = `
+        <div class="gc-top">
+          <div class="gc-icon">${g.icon}</div>
+          <div class="gc-info">
+            <span class="gc-name">${g.name}</span>
+            <span class="gc-species">${DATA.monsters[g.monsterId]?.species || ''}</span>
+            <span class="gc-level">Lv ${g.level}</span>
+            <div class="hp-bar-wrap mini">
+              <div class="hp-bar-label">HP</div>
+              <div class="hp-bar-track">
+                <div class="hp-bar-fill guardian" style="width:${g.currentHp/g.maxHp*100}%"></div>
+              </div>
+              <span>${g.currentHp}/${g.maxHp}</span>
+            </div>
+          </div>
+          ${isActive ? '<span class="deployed-tag">Active</span>' : ''}
+        </div>
+        <div class="gc-actions">
+          <button class="btn-sm btn-info"   onclick="UI.openGuardianDetail(${i},'info')">📋 Info</button>
+          <button class="btn-sm btn-bio"    onclick="UI.openGuardianDetail(${i},'bio')">🌿 Bio</button>
+          <button class="btn-sm btn-feed"   onclick="UI.openGuardianDetail(${i},'feed')">☀️ Feed</button>
+          ${!isActive ? `<button class="btn-sm btn-deploy" onclick="UI.deployGuardian(${i})">⚔️ Deploy</button>` : ''}
+        </div>`;
+      list.appendChild(card);
+    });
+  }
+
+  function _renderHatchery() {
+    const list  = document.getElementById('garden-hatch-list');
+    const seeds = State.get().seeds;
+    list.innerHTML = '';
+
+    const waterCount = State.itemCount('water');
+    const cost       = DATA.hatchCost;
+
+    if (seeds.length === 0) {
+      list.innerHTML = '<p class="empty-msg">No seeds yet.<br>Defeat or capture monsters to find seeds!</p>';
+      return;
+    }
+
+    seeds.forEach((seed, i) => {
+      const def  = DATA.items[seed.seedItemId] || {};
+      const mon  = DATA.monsters[seed.monsterId] || {};
+      const canH = waterCount >= cost;
+      const card = document.createElement('div');
+      card.className = 'seed-card';
+      card.innerHTML = `
+        <div class="seed-icon">${def.icon || '🌰'}</div>
+        <div class="seed-info">
+          <span class="seed-name">${def.name || seed.seedItemId}</span>
+          <span class="seed-monster">Will hatch into: ${mon.name || seed.monsterId}</span>
+          <span class="seed-cost">Cost: ${cost} 💧 &nbsp;·&nbsp; You have: ${waterCount} 💧</span>
+        </div>
+        <button class="btn-sm btn-hatch ${canH ? '' : 'disabled'}"
+          onclick="UI.hatchSeed(${i})" ${canH ? '' : 'disabled'}>
+          Hatch 🥚
+        </button>`;
+      list.appendChild(card);
+    });
+  }
+
+  // ── Inventory ─────────────────────────────────────────────
+  function _renderInventory() {
+    const grid = document.getElementById('inventory-grid');
+    const inv  = State.get().inventory;
+    grid.innerHTML = '';
+
+    const consumables = Object.keys(inv).filter(k => {
+      const def = DATA.items[k];
+      return def && def.type === 'consumable' && inv[k] > 0;
+    });
+    const seedItems = Object.keys(inv).filter(k => {
+      const def = DATA.items[k];
+      return def && def.type === 'seed' && inv[k] > 0;
+    });
+
+    if (consumables.length === 0 && seedItems.length === 0) {
+      grid.innerHTML = '<p class="empty-msg">Your bag is empty.<br>Defeat monsters to collect items!</p>';
+      return;
+    }
+
+    if (consumables.length > 0) {
+      const h = document.createElement('p');
+      h.className = 'inv-section-label'; h.textContent = 'Items';
+      grid.appendChild(h);
+      consumables.forEach(id => grid.appendChild(_makeItemCard(id, inv[id])));
+    }
+    if (seedItems.length > 0) {
+      const h = document.createElement('p');
+      h.className = 'inv-section-label'; h.textContent = 'Seeds';
+      grid.appendChild(h);
+      seedItems.forEach(id => grid.appendChild(_makeItemCard(id, inv[id])));
+    }
+  }
+
+  function _makeItemCard(id, qty) {
+    const def  = DATA.items[id];
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-icon">${def.icon}</div>
+      <div class="item-details">
+        <div class="item-name">${def.name}</div>
+        <div class="item-desc">${def.description}</div>
+      </div>
+      <div class="item-qty">×${qty}</div>`;
+    return card;
+  }
+
+  // ── Guardian Detail ───────────────────────────────────────
+  let _detailIndex = 0;
+
+  function openGuardianDetail(index, tab = 'info') {
+    _detailIndex = index;
+    const g   = State.get().guardians[index];
+    const mon = DATA.monsters[g?.monsterId];
+    if (!g || !mon) return;
+
+    _setText('detail-guardian-name', g.name);
+    _renderDetailInfo(index, g, mon);
+    _renderDetailBio(mon);
+    _renderDetailFeed(index, g);
+
+    document.querySelectorAll('#detail-tabs .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#screen-guardian-detail .tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelector(`#detail-tabs [data-tab="${tab}"]`)?.classList.add('active');
+    document.getElementById(`detail-tab-${tab}`)?.classList.add('active');
+
+    showScreen('screen-guardian-detail');
+  }
+
+  function _renderDetailInfo(index, g, mon) {
+    document.getElementById('detail-tab-info').innerHTML = `
+      <div class="detail-hero">
+        <div class="detail-big-icon">${g.icon}</div>
+        <div class="detail-hero-text">
+          <div class="detail-hero-name">${g.name}</div>
+          <div class="detail-hero-species">${mon.species}</div>
+          <div class="detail-hero-archetype">${mon.archetype.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="detail-stats-block">
+        <div class="stat-row"><span>Level</span><strong>Lv ${g.level}</strong></div>
+        <div class="stat-row">
+          <span>HP</span>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar-track"><div class="stat-bar-fill hp" style="width:${g.currentHp/g.maxHp*100}%"></div></div>
+            <strong>${g.currentHp}/${g.maxHp}</strong>
+          </div>
+        </div>
+        <div class="stat-row"><span>Attack</span><strong>${g.attack}</strong></div>
+        <div class="stat-row"><span>Defense</span><strong>${g.defense}</strong></div>
+      </div>
+      <p class="detail-desc">${mon.description}</p>
+      <button class="btn-deploy-full ${State.get().activeGuardianIndex === index ? 'deployed' : ''}"
+        onclick="UI.deployGuardian(${index})">
+        ${State.get().activeGuardianIndex === index ? '✅ Active in Battle' : '⚔️ Deploy to Battle'}
+      </button>`;
+  }
+
+  function _renderDetailBio(mon) {
+    const bio   = mon.bio;
+    const facts = bio.funFacts.map(f => `<li>${f}</li>`).join('');
+    document.getElementById('detail-tab-bio').innerHTML = `
+      <div class="bio-block">
+        <div class="bio-label">Real Name</div>
+        <div class="bio-value">${bio.realName}</div>
+      </div>
+      <div class="bio-block">
+        <div class="bio-label">Habitat</div>
+        <div class="bio-value">${bio.habitat}</div>
+      </div>
+      <div class="bio-block">
+        <div class="bio-label">Conservation Status</div>
+        <div class="bio-value bio-status">${bio.conservationStatus}</div>
+      </div>
+      <div class="bio-block">
+        <div class="bio-label">Fun Facts</div>
+        <ul class="bio-facts">${facts}</ul>
+      </div>
+      <div class="bio-block">
+        <div class="bio-label">Did You Know?</div>
+        <div class="bio-value bio-trivia">"${bio.trivia}"</div>
+      </div>`;
+  }
+
+  function _renderDetailFeed(index, g) {
+    const cost    = DATA.levelUpCost(g.level);
+    const have    = State.itemCount('sunlight');
+    const canFeed = have >= cost;
+    const base    = DATA.guardianBase[g.monsterId];
+    document.getElementById('detail-tab-feed').innerHTML = `
+      <div class="feed-hero">
+        <div class="feed-icon">${g.icon}</div>
+        <div class="feed-level">Level ${g.level}</div>
+      </div>
+      <div class="feed-stat-preview">
+        <div class="feed-stat"><span>Current HP</span><strong>${g.maxHp}</strong></div>
+        <div class="feed-arrow">→ Lv ${g.level + 1}</div>
+        <div class="feed-stat"><span>Next HP</span><strong>${g.maxHp + base.hpPerLevel}</strong></div>
+      </div>
+      <div class="feed-stat-preview">
+        <div class="feed-stat"><span>Current ATK</span><strong>${g.attack}</strong></div>
+        <div class="feed-arrow">→</div>
+        <div class="feed-stat"><span>Next ATK</span><strong>${g.attack + base.attackPerLevel}</strong></div>
+      </div>
+      <div class="feed-cost-box">
+        <div class="feed-cost-label">Feed cost</div>
+        <div class="feed-cost-amount">${cost} ☀️ Sunlight</div>
+        <div class="feed-cost-have">You have: ${have} ☀️</div>
+      </div>
+      <button class="btn-feed-action ${canFeed ? '' : 'disabled'}"
+        onclick="UI.feedGuardian(${index})" ${canFeed ? '' : 'disabled'}>
+        ${canFeed ? '☀️ Feed & Level Up' : 'Not enough Sunlight'}
+      </button>`;
+  }
+
+  function closeDetail() { showScreen('screen-garden'); _renderGarden(); }
+
+  // ── Guardian actions ──────────────────────────────────────
+  function hatchSeed(index) {
+    const result = Hatchery.hatch(index);
+    if (!result.ok) { toast(result.reason); return; }
+    toast(`✨ ${result.guardian.name} hatched!`);
+    Battle.refreshGuardian();
+    _renderGarden();
+  }
+
+  function feedGuardian(index) {
+    const g = State.get().guardians[index];
+    if (!g) return;
+    const result = g.levelUp();
+    if (!result.success) { toast(result.reason); return; }
+    toast(`🌟 ${g.name} reached Lv ${result.newLevel}! +${result.hpGain} HP, +${result.atkGain} ATK`);
+    Battle.refreshGuardian();
+    openGuardianDetail(index, 'feed');
+  }
+
+  function deployGuardian(index) {
+    State.setActiveGuardian(index);
+    Battle.refreshGuardian();
+    const g = State.get().guardians[index];
+    toast(`${g.name} deployed to battle!`);
+    _renderGarden();
+    if (document.getElementById('screen-guardian-detail')?.classList.contains('active')) {
+      openGuardianDetail(index, 'info');
+    }
+  }
+
+  // ── Battle result ─────────────────────────────────────────
+  function showResult(outcome, drops, enemy) {
+    const title   = document.getElementById('result-title');
+    const dropsEl = document.getElementById('result-drops');
+
+    title.textContent = outcome === 'victory' ? '🌿 Victory!'
+                      : outcome === 'capture' ? '🌱 Captured!'
+                      : '💀 Defeated…';
+    title.className = outcome === 'victory' ? 'result-victory'
+                    : outcome === 'capture' ? 'result-capture'
+                    : 'result-defeat';
+
+    dropsEl.innerHTML = '';
+    if (drops.length > 0) {
+      const h = document.createElement('p');
+      h.className = 'drops-label'; h.textContent = 'Drops';
+      dropsEl.appendChild(h);
+      drops.forEach(d => {
+        const def = DATA.items[d.itemId];
+        if (!def) return;
+        const row = document.createElement('div');
+        row.className = 'drop-row';
+        row.innerHTML = `<span class="drop-icon">${def.icon}</span><span class="drop-name">${def.name}</span><span class="drop-qty">×${d.qty}</span>`;
+        dropsEl.appendChild(row);
+      });
+    } else {
+      dropsEl.innerHTML = '<p class="empty-msg">No drops this time.</p>';
+    }
+
+    showScreen('screen-result');
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  return {
+    showScreen, setBattleUI: _setBattleUI,
+    openBattle, openGarden, openInventory, closeToHub, exitBattle,
+    _renderGardenPublic: _renderGarden,
+    switchGardenTab,
+    hatchSeed, feedGuardian, deployGuardian,
+    openGuardianDetail, closeDetail,
+    showResult, toast,
+  };
+})();
+// ============================================================
+//  game.js — Game orchestrator
+// ============================================================
+
+const Game = (() => {
+
+  let _cameraStream = null;
+
+  function _enemyLevel() {
+    return Math.min(10, 1 + Math.floor(State.get().encounterCount / 5));
+  }
+
+  function startGame() {
+    if (!State.get().tutorialDone) {
+      UI.showScreen('screen-tutorial');
+    } else {
+      UI.showScreen('screen-hub');
+    }
+  }
+
+  function finishTutorial() {
+    State.completeTutorial();
+    UI.showScreen('screen-hub');
+  }
+
+  function enterBattle() {
+    if (!State.getActiveGuardian()) {
+      UI.showScreen('screen-garden');
+      UI.switchGardenTab('hatchery');
+      UI._renderGardenPublic();
+      UI.toast('🌱 Hatch your seed first! Use your 3 💧 Water.');
+      return;
+    }
+    _startCamera().then(() => {
+      UI.showScreen('screen-battle');
+      UI.setBattleUI(true);
+      setTimeout(_newEncounter, 150);
+    });
+  }
+
+  function exitBattle() {
+    MonsterRenderer.dispose();
+    _stopCamera();
+    UI.setBattleUI(false);
+    UI.showScreen('screen-hub');
+  }
+
+  function nextEncounter() {
+    State.get().encounterCount++;
+    MonsterRenderer.dispose();
+    UI.showScreen('screen-battle');
+    UI.setBattleUI(true);
+    setTimeout(_newEncounter, 150);
+  }
+
+  function _newEncounter() {
+    const pool = ['pitcher_knight','snap_drake','puffer_fern','rafflesia_king','bramble_cat','sun_beamer','baobab_sentinel','willow_weeper','cactus_sentry','lotus_monk'];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    Battle.start(pick, _enemyLevel());
+  }
+
+  async function _startCamera() {
+    _stopCamera();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      _cameraStream = stream;
+      const vid = document.getElementById('ar-camera');
+      if (vid) { vid.srcObject = stream; vid.style.display = 'block'; await vid.play(); }
+    } catch (e) {
+      console.warn('Camera unavailable:', e.message);
+    }
+  }
+
+  function _stopCamera() {
+    if (_cameraStream) {
+      _cameraStream.getTracks().forEach(t => t.stop());
+      _cameraStream = null;
+    }
+    const vid = document.getElementById('ar-camera');
+    if (vid) { vid.srcObject = null; vid.style.display = 'none'; }
+  }
+
+  return { startGame, finishTutorial, enterBattle, exitBattle, nextEncounter };
+})();
+    UI.switchDetailTab = (tab) => {
+      document.querySelectorAll('#detail-tabs .tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#screen-guardian-detail .tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector(`#detail-tabs [data-tab="${tab}"]`)?.classList.add('active');
+      document.getElementById(`detail-tab-${tab}`)?.classList.add('active');
+    };
+    window.addEventListener('resize', () => MonsterRenderer.resize());
+  </script>
+</body>
+</html>
